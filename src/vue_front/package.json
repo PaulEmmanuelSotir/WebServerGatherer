@@ -12,7 +12,8 @@
     "core-js": "^3.6.5",
     "roboto-fontface": "*",
     "vue": "^2.6.11",
-    "vuetify": "^2.2.11"
+    "vuetify": "^2.2.11",
+    "x-frame-bypass": "^1.0.2"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "~4.5.0",
