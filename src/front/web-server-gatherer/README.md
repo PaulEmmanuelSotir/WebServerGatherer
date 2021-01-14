@@ -1,4 +1,4 @@
-# vue_front
+# web-server-gatherer
 
 ## Project setup
 ```

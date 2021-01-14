@@ -87,49 +87,49 @@
 function defineSettingsRules() {
   function maxStrSizeRule() {
     return text =>
-      (text || '').length <= this.max ||
-      `A maximum of ${this.max} characters is allowed`
+      (text || "").length <= this.max ||
+      `A maximum of ${this.max} characters is allowed`;
   }
 
-  const rules = {}
+  const rules = {};
   rules.emailRules = [
     maxStrSizeRule(),
-    v => !!v || 'E-mail is required',
-    v => /.+@.+\..+/.test(v) || 'E-mail must be valid'
-  ]
-  rules.nameRules = [maxStrSizeRule()]
-  return rules
+    v => !!v || "E-mail is required",
+    v => /.+@.+\..+/.test(v) || "E-mail must be valid"
+  ];
+  rules.nameRules = [maxStrSizeRule()];
+  return rules;
 }
 
 export default {
-  name: 'settings',
+  name: "settings",
 
   data: () => ({
     // TODO: load settings from config file
     settings: {
       autoLocahostScan: false,
       scanRefreshRate: 0,
-      foo: 'foo text field'
+      foo: "foo text field"
     }
   }),
   watch: {
-    settings: 'validate'
+    settings: "validate"
   },
   methods: {
     validate() {
-      this.$refs.settingsForm.validate()
+      this.$refs.settingsForm.validate();
     },
     reset() {
-      this.$refs.settingsForm.reset()
+      this.$refs.settingsForm.reset();
     },
     resetValidation() {
-      this.$refs.settingsForm.resetValidation()
+      this.$refs.settingsForm.resetValidation();
     }
   },
   computed: {
-    rules: defineSettingsRules()
+    rules: defineSettingsRules
   }
-}
+};
 </script>
 
 <style scoped></style>

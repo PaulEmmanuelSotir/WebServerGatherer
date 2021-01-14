@@ -89,14 +89,28 @@
     </v-navigation-drawer>
 
     <v-main>
-      <v-card flat tile height="100%">
+      <v-container fill-height class="ma-0 pa-0">
+        <!--<v-card flat tile height="100%" style="background:blue" class="align-stretch align-self-stretch">-->
+
+        <v-tabs-items
+          v-model="current_view"
+          continuous
+          mandatory
+          class="full-height-width"
+        >
+          <v-tab-item
+            class="full-height-width"
+            v-for="server in localhost_servers"
+            :key="server.id"
+          >
+            <v-lazy class="full-height-width">
+              <dashboard :server="server" />
+              <!-- 
+      <v-card flat tile class="full-height-width">
         <v-tabs-items v-model="current_view" continuous mandatory>
           <v-tab-item v-for="(server, i) in localhost_servers" :key="server.id">
             <v-lazy>
-              <div>
-                <strong> Server number {{ i }}: "{{ server }}"</strong>
-                <dashboard :server="server" />
-              </div>
+              <dashboard :server="server" /> -->
             </v-lazy>
           </v-tab-item>
 
@@ -123,7 +137,7 @@
             </v-lazy>
           </v-tab-item>
         </v-tabs-items>
-      </v-card>
+      </v-container>
     </v-main>
 
     <v-footer app padless>
@@ -151,60 +165,60 @@ function loadConfig() {
   //   const conf = {}
   //   return resolve(conf)
   // })
-  return {}
+  return {};
 }
 
 class Server {
   constructor(port, domain, config_profile, is_https = false) {
-    this.port = port
-    this.domain = domain
-    this.config_profile = config_profile
-    this.mean_size = 0.0
-    this.size_count = 0
-    this.status = null
-    this.is_https = is_https
+    this.port = port;
+    this.domain = domain;
+    this.config_profile = config_profile;
+    this.mean_size = 0.0;
+    this.size_count = 0;
+    this.status = null;
+    this.is_https = is_https;
   }
 
   get id() {
     // A Web Server is either identified by its config profile, if it exists, or its URL
-    return this.config_profile ? this.config_profile.id : this.url
+    return this.config_profile ? this.config_profile.id : this.url;
   }
 
   get size_metric() {
-    return this.size
+    return this.size;
   }
 
   get is_localhost() {
-    return domain === 'localhost' || '127.0.0.1'
+    return this.domain === "localhost" || "127.0.0.1";
   }
 
   get url() {
-    const domain = this.domain === 'localhost' ? '127.0.0.1' : this.domain
-    const port = this.port ? `:${this.port}` : ''
-    return `${this.is_https ? 'https' : 'http'}://${domain}${port}`
+    const domain = this.domain === "localhost" ? "127.0.0.1" : this.domain;
+    const port = this.port ? `:${this.port}` : "";
+    return `${this.is_https ? "https" : "http"}://${domain}${port}`;
   }
 
   get icon() {
     // TODO: allow icon from config profile and update icon (from v-icon to image or svg one) once loaded if available + fallback to default icon (mdi-web or mdi-web-clock is loading)
-    if (this.config_profile && typeof this.config_profile.icon === 'string') {
-      return this.config_profile.icon
+    if (this.config_profile && typeof this.config_profile.icon === "string") {
+      return this.config_profile.icon;
     }
     if (this.status !== 200) {
-      return 'mdi-web' // mdi-web-clock
+      return "mdi-web"; // mdi-web-clock
     }
-    return 'mdi-web'
+    return "mdi-web";
   }
 
   update_status(status) {
-    this.status = status
+    this.status = status;
   }
 
   update_size_metric(latest_size) {
     // Update running mean of page size (size metric used for having an approximate idea of page size)
-    this.size_count += 1
+    this.size_count += 1;
     this.size =
       this.mean_size / (1 + 1.0 / this.size_count) +
-      latest_size / (this.size_count + 1)
+      latest_size / (this.size_count + 1);
   }
 }
 
@@ -213,42 +227,42 @@ function scanLocalhost() {
   // TODO: Scan localhost ports for servers listenning and yield them asynchronously into an Array
   // TODO: Pass this.config promise and load servers on config.then
   const servers = [
-    new Server(8888, '127.0.0.1', { name: 'Jupyter Notebook', id: 45645646 }),
-    new Server(8881, '127.0.0.1', null),
-    new Server(9001, '127.0.0.1', { name: 'Tensorboard', id: 345354353 })
-  ]
-  return servers
+    new Server(8888, "127.0.0.1", { name: "Jupyter Notebook", id: 45645646 }),
+    new Server(8881, "127.0.0.1", null),
+    new Server(9001, "127.0.0.1", { name: "Tensorboard", id: 345354353 })
+  ];
+  return servers;
   // return resolve(servers)
   //})
 }
 
 export default {
-  name: 'DashboardGatherer',
+  name: "dashboard-gatherer",
 
   components: {
-    dashboard: () => import('@/components/Dashboard.vue'),
-    settings: () => import('@/components/Settings.vue')
+    dashboard: () => import("@/components/Dashboard.vue"),
+    settings: () => import("@/components/Settings.vue")
   },
 
   data: () => ({
     drawer: null,
     current_view: 0,
-    title: 'DashBoard Web UI Gatherer',
-    navtitle: 'Web-Servers listenning on localhost',
-    shorttitle: 'DashBoard Gatherer',
-    version: '0.0.1',
-    author: 'PaulEmmanuel SOTIR',
-    github: 'https://github.com/PaulEmmanuelSotir/DashboardWebUIGatherer',
+    title: "DashBoard Web UI Gatherer",
+    navtitle: "Localhost Web-Servers",
+    shorttitle: "DashBoard Gatherer",
+    version: "0.0.1",
+    author: "PaulEmmanuel SOTIR",
+    github: "https://github.com/PaulEmmanuelSotir/DashboardWebUIGatherer",
     localhost_servers: scanLocalhost()
   }),
 
   computed: {
-    conf: loadConfig(),
+    conf: loadConfig,
     navsubtitle: function() {
       return !Array.isArray(this.localhost_servers) ||
         this.localhost_servers.length === 0
-        ? 'No listenning server found'
-        : `${this.localhost_servers.length} listenning server found`
+        ? "No listenning server found"
+        : `${this.localhost_servers.length} listenning server found`;
     }
   },
 
@@ -256,19 +270,29 @@ export default {
     current_view: function(newView, oldView) {
       console.log(
         `Drawer model is "${this.drawer}", localhost servers : "${this.localhost_servers}"`
-      )
-      console.log(`View changed from "${oldView}" to "${newView}"...`)
+      );
+      console.log(`View changed from "${oldView}" to "${newView}"...`);
     }
   },
 
   created: function() {
-    console.log('!created!')
+    console.log("!created!");
   },
 
   destroyed: function() {
-    console.log('!destroyed!')
+    console.log("!destroyed!");
+  },
+
+  errorCaptured: function(err, component, info) {
+    console.log(`ERR: "${component}" component error: "${err}"; info: ${info}`);
+    return true; // Error should be propagating further
   }
-}
+};
 </script>
 
-<style></style>
+<style>
+.full-height-width {
+  height: 100%;
+  width: 100%;
+}
+</style>
