@@ -1,0 +1,223 @@
+openapi: 3.0.0
+servers:
+  # Added by API Auto Mocking Plugin
+  - description: SwaggerHub API Auto Mocking
+    url: https://virtserver.swaggerhub.com/PaulEmmanuelSotir/DashBoardGatherer/1.0.0
+info:
+  description: WebServer Gatherer backend Open API (aka Swagger) specification 
+  version: "1.0.0"
+  title: WebServer Gatherer Backend API
+  contact:
+    email: paul-emmanuel@outlook.com
+  license:
+    name: MIT License
+    url: 'https://raw.githubusercontent.com/PaulEmmanuelSotir/DashboardWebUIGatherer/master/LICENSE'
+tags:
+  - name: DoNotExpose
+    description: API endpoints/calls which may raise security issues if exposed publicly
+paths:
+  /webservers/scan:
+    get:
+      summary: Scan backend locahost for web servers
+      operationId: scan
+      description: |
+        Scan target host/ip address for listenning TCP ports and return a list of all web servers which have been found.
+        A port range or list can be provided to restric/filter port lookup range.
+      parameters:
+        - in: query
+          name: ip
+          description: Host IP address on which opened TCP ports should be scanned for 
+          required: false
+          schema:
+            type: str
+            default: "127.0.0.1"
+
+        - in: query
+          name: ports
+          description: | 
+            Optional string argument which can either be parsed as a Python integer port range, a list of integer ports, a single integer port or a regex to be used to filter ports.
+            By default, all ports are taken into account
+          required: false
+          schema:
+            $ref: '#/components/schemas/PortRange'
+      responses:
+        '200':
+          description: Sucessfull backend locahost port scanning
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortsMap'
+  /webservers/kill:
+    post:
+      tags:
+        - DoNotExpose
+      summary: Endpoint allowing to manage web server webservers (kill or restart)
+      operationId: kill
+      description: |
+        Endpoint allowing to kill or restart web server(s) on given port(s).
+        In case of Restart request, .
+      responses:
+        '201':
+          description: Management action(s) sucesfully performed on web server(s) 
+        '400':
+          description: Failed to execute management action(s) on given server (invalid action(s) or port(s))
+      requestBody:
+        description: Webserver management request body, determining action(s) to be taken on given web server port(s)
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebserverKillOrRestart'
+  /console:
+    post:
+      tags:
+        - DoNotExpose
+      summary: Post endpoint allowing arbitrary Python and backend system console (e.g. bash) code to be executed  
+      operationId: execute
+      description: Post endpoint allowing arbitrary Python and backend system console (e.g. bash) code to be executed
+      parameters:
+        - in: query
+          name: synchronous
+          description: |
+            Optional boolean indicating whether if command should be executed synchronously or not (defaults to 'true').
+            If 'true', then POST request response will contain command results without the need to request it using '/console/getExecutionResults' endpoint.
+          schema:
+            type: boolean
+            default: true
+        - in: query
+          name: timout
+          description: |
+              Timout in milliseconds used to determine maximal time which can be spent waiting for command to be done before responding to this POST request.
+              If timeout is reached before command execution is done, result can be retreived as if 'synchronous' was 'false'.
+              If 'synchronous' is 'false', this timeout is ignored.
+              A '-1' (default) stimeout value means there is no timout
+          schema:
+              type: integer
+              minimum: -1
+              format: ms # milliseconds
+              default: -1
+      responses:
+        '200':
+          description: Sucessfully triggered console command
+        '400':
+          description: 'invalid input, object invalid'
+        '409':
+          description: an existing item already exists
+      requestBody:
+        description: Command(s) to be executed on a backend console or python interpreter
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsoleExec'
+  /config:
+    get:
+      summary: Retreive current backend configuration/settings
+      operationId: getSettings
+      description: Retreive current backend configuration/settings as YML file
+      responses:
+        '200':
+          description: Sucessfully read backend configuration
+    post:
+      tags:
+        - DoNotExpose
+      summary: Post endpoint allowing to modify backend configuration
+      operationId: setSettings
+      description: |
+        Post endpoint allowing to modify backend configuration by posting a YAML configuration.
+        Depending on 'editPolicy' value, posted yaml configuration will either be merged with existing one or replace it (default behavior).
+        If 'editPolicy' is 'RESET_TO_DEFAULT', request body is ignored and backend policy will be reset to its defaults.
+      responses:
+        '200':
+          description: Sucessfully modified backend configuration
+        '400':
+          description: Invalid configuration or cant modify existing backend configuration
+      parameters:
+        - in: query
+          name: editPolicy
+          description: Backend configuration edition policy (defaults to 'REPLACE').
+          schema:
+            type: string
+            enum: ['REPLACE', 'MERGE', 'RESET_TO_DEFAULT']
+            default: 'REPLACE'
+      requestBody:
+        description: YAML configuration to be applied 
+        content:
+          text/yaml:
+            schema:
+              type: string
+              format: yaml
+components:
+  schemas:
+    WebServer:
+      required:
+        - port
+        - domain
+      properties:
+        name:
+          type: string
+          example: Jupyter Notebook
+        port:
+          type: integer
+          example: 8888
+        url:
+          type: string
+          format: url
+        status:
+          type: integer
+          example: 200
+        # TODO: define optional web server informations like size statistics, etc ...
+
+    PortsMap:
+      required:
+        - ports
+        - webServers
+      properties:
+        ports:
+          $ref: '#/components/schemas/PortRange'
+        webServers:
+          type: array
+          items:
+            $ref: '#/components/schemas/WebServer'
+  
+    WebserverKillOrRestart:
+      required:
+        - ports
+        - action
+      properties:
+        actions:
+          type: array
+          items:
+            type: object
+            properties:
+              ports:
+                $ref: '#/components/schemas/PortRange'
+              action:
+                type: string
+                description: |
+                  Webserver management action to perform on its respective port(s)
+                enum: ["KILL", "RESTART"]
+
+    PortRange:
+      default: '[0-9]+'
+      example: [8888, 8080, '9[0-9]{3}']
+      oneOf:
+        - type: string
+          format: regex
+        - type: integer
+        - type: array
+          items:
+            oneOf:
+              - type: string
+                format: regex
+              - type: integer
+        - type: object
+          properties:
+            min:
+              type: integer
+            max:
+              type: integer
+
+    ConsoleExec:
+      type: object
+      # TODO: ...
+    #ConsoleFeedback:
+      # TODO: ...

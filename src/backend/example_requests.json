@@ -1,0 +1,18 @@
+{
+    "requests":
+    [
+        {
+            "url": "localhost:8001/WebServergatherer/backend/api/config",
+            "body": {
+
+            }
+
+        },
+        {
+
+        }
+    ]
+
+}
+
+

@@ -1,0 +1,18 @@
+{
+    "pythonVersion": "3.7",
+    "pythonPlatform": "Linux",
+    "venvPath": "/home/pes/anaconda3/envs/WebServerGathererBackend",
+    "stubPath": "src/stubs",
+    "reportMissingTypeStubs": false,
+    "include": ["src"],    
+    "executionEnvironments": [
+        {
+            "root": "src/"
+        }
+    ],
+    "exclude": [
+        "**/node_modules",
+        "**/__pycache__",
+        "src/typestubs"
+    ]
+}

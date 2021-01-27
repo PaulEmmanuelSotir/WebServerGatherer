@@ -1,0 +1,37 @@
+name: WebServerGathererBackend
+channels:
+  - default
+  - conda-forge
+dependencies:
+  - python=3.7.*
+  - pip
+  - setuptools
+  - autopep8
+  - pylint # Python linter
+  - pytest # Python unit testing framework.
+  - coverage # Tool for measuring code testing coverage of Python
+  - joblib # Used for transparent disk-caching of functions and lazy re-evaluation with `joblib.Memory`
+  - click # CLI Tooling (see 'kedro_cli.py')
+  - zope.event # Basic event publishing system library
+  - jupyter # Jupyter notebooks
+  - matplotlib # Basic data plotting and visualization library
+  - pandas # Fast, powerful, flexible and easy to use open source data analysis and manipulation tool (built around `pandas.Dataframe` data container, like PyTorch is built around 'torch.Tensor' or numpy reling on 'numpy.ndarray')
+  - numpy # Numpy
+  - seaborn # Visualization/plotting library
+  - pynvml # Allows to monitor GPU usage information # TODO: Determine whether if there are better tools for GPU usage monitoring 
+  - fastapi # FastAPI allows easy and performant API implementation (see https://fastapi.tiangolo.com/) 
+  - uvicorn # FastAPI dependency used for REST API deployement
+  - pydantic # FastAPI dependency used for data model convertion, specification and validation
+  - ujson # Optional FastAPI dependency: Allows faster JSON parsing
+  - orjson # Optional FastAPI dependency: UJSONResponse support for better performances
+  - email_validator # Optional FastAPI dependency
+  - requests # Used for FastAPI testing features
+  - aiofiles # Required by FastAPI if you want to use FileResponse or StaticFiles
+  - jinja2 # Templating used as FastAPI dependency
+  - mlflow
+  - pyyaml # YAML Backend
+  - pip:
+    - nni
+    - python3-nmap
+    - aiofile # Async file operations wit asyncio
+  
