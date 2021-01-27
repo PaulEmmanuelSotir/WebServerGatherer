@@ -3,7 +3,7 @@
     <v-app-bar color="primary" dark app>
       <div class="d-flex align-center flex-wrap">
         <v-app-bar-nav-icon @click="drawer = !drawer"></v-app-bar-nav-icon>
-        <v-toolbar-title>{{ title }}</v-toolbar-title>
+        <v-toolbar-title>{{ currentViewTitle }}</v-toolbar-title>
         <v-spacer></v-spacer>
         <v-btn
           href="https://github.com/PaulEmmanuelSotir/DashboardWebUIGatherer"
@@ -21,8 +21,8 @@
       <!-- App title and status subtitle -->
       <v-list-item>
         <v-list-item-content>
-          <v-list-item-title class="title"> {{ navtitle }} </v-list-item-title>
-          <v-list-item-subtitle> {{ navsubtitle }} </v-list-item-subtitle>
+          <v-list-item-title class="title"> {{ title }} </v-list-item-title>
+          <v-list-item-subtitle> {{ subtitle }} </v-list-item-subtitle>
         </v-list-item-content>
       </v-list-item>
 
@@ -30,25 +30,19 @@
 
       <!-- Listenning web servers -->
       <v-list dense nav>
-        <v-list-item-group mandatory v-model="current_view">
-          <v-list-item
-            v-for="server in localhost_servers"
-            :key="server.id"
-            link
-          >
+        <!-- TODO: Change color of each servers wit it respective main color from its webview and display a preview tumbail on over -->
+        <v-list-item-group mandatory v-model="currentView">
+          <v-list-item v-for="server in localhostServers" :key="server.id" link>
             <v-list-item-icon>
               <v-icon>{{ server.icon }}</v-icon>
             </v-list-item-icon>
 
             <v-list-item-content>
               <v-list-item-title>
-                {{
-                  server.config_profile
-                    ? server.config_profile.name
-                    : server.url
-                }}
+                {{ server.name }}
               </v-list-item-title>
-              <v-list-item-subtitle v-if="server.config_profile">
+              <v-list-item-subtitle v-if="server.hasConfigProfile">
+                <!-- I.e., if server.name is other than url (name from server.configProfile.name) -->
                 {{ server.url }}
               </v-list-item-subtitle>
             </v-list-item-content>
@@ -58,30 +52,16 @@
 
           <!-- Servers tiles/grid and settings views -->
 
-          <v-list-item link>
+          <v-list-item
+            v-for="otherView in otherViews"
+            :key="otherView.name"
+            link
+          >
             <v-list-item-icon>
-              <v-icon>mdi-view-compact</v-icon>
+              <v-icon> {{ otherView.icon }} </v-icon>
             </v-list-item-icon>
             <v-list-item-content>
-              <v-list-item-title>Servers tiles view</v-list-item-title>
-            </v-list-item-content>
-          </v-list-item>
-
-          <v-list-item link>
-            <v-list-item-icon>
-              <v-icon>mdi-console-line</v-icon>
-            </v-list-item-icon>
-            <v-list-item-content>
-              <v-list-item-title>Console</v-list-item-title>
-            </v-list-item-content>
-          </v-list-item>
-
-          <v-list-item link>
-            <v-list-item-icon>
-              <v-icon>mdi-cogs</v-icon>
-            </v-list-item-icon>
-            <v-list-item-content>
-              <v-list-item-title>Settings</v-list-item-title>
+              <v-list-item-title>{{ otherView.name }}</v-list-item-title>
             </v-list-item-content>
           </v-list-item>
         </v-list-item-group>
@@ -90,50 +70,33 @@
 
     <v-main>
       <v-container fill-height class="ma-0 pa-0">
-        <!--<v-card flat tile height="100%" style="background:blue" class="align-stretch align-self-stretch">-->
-
         <v-tabs-items
-          v-model="current_view"
+          v-model="currentView"
           continuous
           mandatory
           class="full-height-width"
         >
           <v-tab-item
             class="full-height-width"
-            v-for="server in localhost_servers"
+            v-for="server in localhostServers"
             :key="server.id"
           >
             <v-lazy class="full-height-width">
-              <dashboard :server="server" />
-              <!-- 
-      <v-card flat tile class="full-height-width">
-        <v-tabs-items v-model="current_view" continuous mandatory>
-          <v-tab-item v-for="(server, i) in localhost_servers" :key="server.id">
-            <v-lazy>
-              <dashboard :server="server" /> -->
+              <keep-alive class="full-height-width">
+                <dashboard :server="server" />
+              </keep-alive>
             </v-lazy>
           </v-tab-item>
 
-          <v-tab-item>
-            <v-lazy>
-              <v-card>
-                Servers tile view...
-              </v-card>
-            </v-lazy>
-          </v-tab-item>
-
-          <v-tab-item>
-            <v-lazy>
-              <v-card>
-                Console view...
-              </v-card>
-            </v-lazy>
-          </v-tab-item>
-
-          <v-tab-item>
-            <v-lazy>
-              Settings view
-              <settings />
+          <v-tab-item
+            class="full-height-width"
+            v-for="otherView in otherViews"
+            :key="otherView.name"
+          >
+            <v-lazy class="full-height-width">
+              <keep-alive class="full-height-width">
+                <component :is="otherView.component"></component>
+              </keep-alive>
             </v-lazy>
           </v-tab-item>
         </v-tabs-items>
@@ -158,6 +121,11 @@
 </template>
 
 <script>
+import ServersTileView from "@/components/ServersTileView.vue";
+import Dashboard from "@/components/Dashboard.vue";
+import Settings from "@/components/Settings.vue";
+import Console from "@/components/Console.vue";
+
 function loadConfig() {
   // const defaults = {}
 
@@ -168,40 +136,66 @@ function loadConfig() {
   return {};
 }
 
+function getCurrentComponent() {
+  if (typeof this.currentView !== "undefined" && this.currentView !== null) {
+    return this.currentView >= this.localhostServers.length
+      ? { isServer: false, view: this.otherViews[this.currentView] }
+      : { isServer: true, view: this.localhostServers[this.currentView] };
+  }
+  return null;
+}
+
 class Server {
-  constructor(port, domain, config_profile, is_https = false) {
+  constructor(port, domain, configProfile, isHttps = false) {
     this.port = port;
     this.domain = domain;
-    this.config_profile = config_profile;
+    this.configProfile = configProfile;
     this.mean_size = 0.0;
-    this.size_count = 0;
+    this.sizeCount = 0;
     this.status = null;
-    this.is_https = is_https;
+    this.isHttps = isHttps;
+  }
+
+  get hasConfigProfile() {
+    return (
+      typeof this.configProfile !== "undefined" && this.configProfile !== null
+    );
   }
 
   get id() {
     // A Web Server is either identified by its config profile, if it exists, or its URL
-    return this.config_profile ? this.config_profile.id : this.url;
+    return this.hasConfigProfile ? this.configProfile.id : this.url;
   }
 
-  get size_metric() {
+  get name() {
+    return this.hasConfigProfile ? this.configProfile.name : `"${this.url}"`;
+  }
+
+  get displayName() {
+    const default_name = `Web-Server listenning at "${this.url}"`;
+    return this.hasConfigProfile
+      ? this.configProfile.name || default_name
+      : default_name;
+  }
+
+  get sizeMetric() {
     return this.size;
   }
 
-  get is_localhost() {
-    return this.domain === "localhost" || "127.0.0.1";
+  get isLocalhost() {
+    return this.domain === "localhost" || "127.0.0.1"; // TODO: not as robust/reliable as intended: Remove this property if possible
   }
 
   get url() {
     const domain = this.domain === "localhost" ? "127.0.0.1" : this.domain;
     const port = this.port ? `:${this.port}` : "";
-    return `${this.is_https ? "https" : "http"}://${domain}${port}`;
+    return `${this.isHttps ? "https" : "http"}://${domain}${port}`;
   }
 
   get icon() {
     // TODO: allow icon from config profile and update icon (from v-icon to image or svg one) once loaded if available + fallback to default icon (mdi-web or mdi-web-clock is loading)
-    if (this.config_profile && typeof this.config_profile.icon === "string") {
-      return this.config_profile.icon;
+    if (this.hasConfigProfile && typeof this.configProfile.icon === "string") {
+      return this.configProfile.icon;
     }
     if (this.status !== 200) {
       return "mdi-web"; // mdi-web-clock
@@ -209,16 +203,16 @@ class Server {
     return "mdi-web";
   }
 
-  update_status(status) {
+  updateStatus(status) {
     this.status = status;
   }
 
-  update_size_metric(latest_size) {
+  updateSizeMetric(latestSize) {
     // Update running mean of page size (size metric used for having an approximate idea of page size)
-    this.size_count += 1;
+    this.sizeCount += 1;
     this.size =
-      this.mean_size / (1 + 1.0 / this.size_count) +
-      latest_size / (this.size_count + 1);
+      this.mean_size / (1 + 1.0 / this.sizeCount) +
+      latestSize / (this.sizeCount + 1);
   }
 }
 
@@ -240,38 +234,69 @@ export default {
   name: "dashboard-gatherer",
 
   components: {
-    dashboard: () => import("@/components/Dashboard.vue"),
-    settings: () => import("@/components/Settings.vue")
+    serversTileView: ServersTileView,
+    dashboard: Dashboard,
+    settings: Settings,
+    console: Console
   },
 
   data: () => ({
     drawer: null,
-    current_view: 0,
-    title: "DashBoard Web UI Gatherer",
-    navtitle: "Localhost Web-Servers",
-    shorttitle: "DashBoard Gatherer",
+    currentView: 0,
+    title: "Web-Server Gatherer",
     version: "0.0.1",
     author: "PaulEmmanuel SOTIR",
     github: "https://github.com/PaulEmmanuelSotir/DashboardWebUIGatherer",
-    localhost_servers: scanLocalhost()
+    localhostServers: scanLocalhost(),
+    otherViews: [
+      {
+        name: "Server tiles view",
+        icon: "mdi-view-compact",
+        component: "servers-tile-view"
+      },
+      {
+        name: "Console",
+        icon: "mdi-console-line",
+        component: "console"
+      },
+      {
+        name: "Settings",
+        icon: "mdi-cogs",
+        component: "settings"
+      }
+    ]
   }),
 
   computed: {
     conf: loadConfig,
-    navsubtitle: function() {
-      return !Array.isArray(this.localhost_servers) ||
-        this.localhost_servers.length === 0
+    subtitle: function() {
+      return !Array.isArray(this.localhostServers) ||
+        this.localhostServers.length === 0
         ? "No listenning server found"
-        : `${this.localhost_servers.length} listenning server found`;
+        : `${this.localhostServers.length} listenning server found`;
+    },
+    currentViewTitle: {
+      get: function() {
+        return this.viewTitle;
+      },
+      set: function(value) {
+        this.viewTitle = value;
+      }
     }
   },
 
   watch: {
-    current_view: function(newView, oldView) {
+    currentView: function(newView, oldView) {
       console.log(
-        `Drawer model is "${this.drawer}", localhost servers : "${this.localhost_servers}"`
+        `View changed from "${oldView}" (${this.localhostServers[oldView].url}) to "${newView}" ((${this.localhostServers[newView].url}))...`
       );
-      console.log(`View changed from "${oldView}" to "${newView}"...`);
+      const { isServer, component } = getCurrentComponent();
+      if (isServer) {
+        this.currentViewTitle.set(component.displayName); // Server from localhostServers
+      } else {
+        this.currentViewTitle.set(component.name); // OterViews Component
+      }
+      // TODO: retreive component or server name and bind it instead of navbar title
     }
   },
 
