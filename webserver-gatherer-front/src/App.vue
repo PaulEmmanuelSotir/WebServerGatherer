@@ -2,24 +2,74 @@
   <v-app>
     <v-app-bar color="primary" dark app>
       <div class="d-flex align-center flex-wrap">
-        <v-app-bar-nav-icon @click="drawer = !drawer"></v-app-bar-nav-icon>
-        <v-toolbar-title>{{ currentViewTitle }}</v-toolbar-title>
-        <v-spacer></v-spacer>
-        <v-btn
-          href="https://github.com/PaulEmmanuelSotir/DashboardWebUIGatherer"
-          target="_blank"
-          text
+        <!-- TODO: Add support for URL arddress text box, "Add to backend server profiles" button, "Ignore this port on ... bakend" button, and "Duplicate tab (creates a new profile which browses to current URL)"  -->
+        <v-app-bar-nav-icon
+          @click="drawer = !drawer"
+          class="flex-shrink-1"
+        ></v-app-bar-nav-icon>
+        <v-divider class="flex-shrink-1">vertical</v-divider>
+        <div
+          v-if="
+            currentComponent !== null && typeof currentComponent !== 'undefined'
+          "
         >
-          <v-icon>mdi-github</v-icon>
-          <v-spacer></v-spacer>
-          <span class="mr-2">Github</span>
-        </v-btn>
+          <v-icon class="flex-shrink-1">{{ currentComponent.icon }}</v-icon>
+          <v-toolbar-title class="flex-shrink-1">{{
+            currentComponentIsServer
+              ? currentComponent.displayName
+              : currentComponent.name
+          }}</v-toolbar-title>
+
+          <div class="d-flex align-center" v-if="currentComponentIsServer">
+            <v-text-field
+              class="flex-grow-1"
+              type="text"
+              label="URL"
+              readonly
+              value="http://localhost:????/"
+            />
+            <v-tooltip bottom>
+              <template v-slot:activator="{ on, attrs }">
+                <v-btn text v-bind="attrs" v-on="on">
+                  <v-icon class="white">mdi-text-box-close</v-icon>
+                </v-btn>
+              </template>
+              <span>
+                Ignore any WebServer listenning on port
+                "{currentComponent.port}" for this backend (can be changed in
+                settings view)
+              </span>
+            </v-tooltip>
+            <v-tooltip bottom v-if="currentComponent.hasConfigProfile">
+              <template v-slot:activator="{ on, attrs }">
+                <v-btn text v-bind="attrs" v-on="on">
+                  <v-icon class="white">mdi-text-box-plus</v-icon>
+                </v-btn>
+              </template>
+              <span>
+                Create backend profile for "{{ currentComponent.name }}"
+                WebServer (can be changed in settings view)
+              </span>
+            </v-tooltip>
+            <v-tooltip bottom v-if="!currentComponent.hasConfigProfile">
+              <template v-slot:activator="{ on, attrs }">
+                <v-btn text v-bind="attrs" v-on="on">
+                  <v-icon class="white">mdi-book-edit</v-icon>
+                </v-btn>
+              </template>
+              <span>
+                Modify backend profile for "{{ currentComponent.view.name }}"
+                WebServer
+              </span>
+            </v-tooltip>
+          </div>
+        </div>
       </div>
     </v-app-bar>
 
     <v-navigation-drawer class="deep-blue accent-4" v-model="drawer" app dark>
       <!-- App title and status subtitle -->
-      <v-list-item>
+      <v-list-item elevation="4">
         <v-list-item-content>
           <v-list-item-title class="title"> {{ title }} </v-list-item-title>
           <v-list-item-subtitle> {{ subtitle }} </v-list-item-subtitle>
@@ -49,6 +99,7 @@
           </v-list-item>
 
           <v-divider></v-divider>
+          <v-spacer></v-spacer>
 
           <!-- Servers tiles/grid and settings views -->
 
@@ -65,6 +116,21 @@
             </v-list-item-content>
           </v-list-item>
         </v-list-item-group>
+
+        <v-divider></v-divider>
+
+        <v-list-item elevation="4">
+          <v-list-item-content>
+            <v-btn
+              href="https://github.com/PaulEmmanuelSotir/DashboardWebUIGatherer"
+              target="_blank"
+            >
+              <v-icon>mdi-git</v-icon>
+              <v-spacer></v-spacer>
+              <span class="mr-2">Project Github</span>
+            </v-btn>
+          </v-list-item-content>
+        </v-list-item>
       </v-list>
     </v-navigation-drawer>
 
@@ -102,21 +168,6 @@
         </v-tabs-items>
       </v-container>
     </v-main>
-
-    <v-footer app padless>
-      <v-card flat tile width="100%" class="primary lighten-1 text-center">
-        <!-- <v-card-text>
-          Lorem ipsum .... <strong>bla bla bla</strong>
-        </v-card-text>
-
-        <v-divider></v-divider> -->
-
-        <v-card-text class="white--text">
-          {{ new Date().getFullYear() }} —
-          <strong>{{ title }}</strong>
-        </v-card-text>
-      </v-card>
-    </v-footer>
   </v-app>
 </template>
 
@@ -136,14 +187,14 @@ function loadConfig() {
   return {};
 }
 
-function getCurrentComponent() {
-  if (typeof this.currentView !== "undefined" && this.currentView !== null) {
-    return this.currentView >= this.localhostServers.length
-      ? { isServer: false, view: this.otherViews[this.currentView] }
-      : { isServer: true, view: this.localhostServers[this.currentView] };
-  }
-  return null;
-}
+// function getCurrentComponent(ctx) {
+//   if (typeof ctx.currentView !== "undefined" && ctx.currentView !== null) {
+//     return ctx.currentView >= ctx.localhostServers.length
+//       ? { isServer: false, view: ctx.otherViews[ctx.currentView] }
+//       : { isServer: true, view: ctx.localhostServers[ctx.currentView] };
+//   }
+//   return null;
+// }
 
 class Server {
   constructor(port, domain, configProfile, isHttps = false) {
@@ -275,28 +326,21 @@ export default {
         ? "No listenning server found"
         : `${this.localhostServers.length} listenning server found`;
     },
-    currentViewTitle: {
-      get: function() {
-        return this.viewTitle;
-      },
-      set: function(value) {
-        this.viewTitle = value;
+    currentComponentIsServer: function() {
+      if (
+        typeof this.currentView !== "undefined" &&
+        this.currentView !== null
+      ) {
+        return this.currentView >= this.localhostServers.length;
       }
-    }
-  },
-
-  watch: {
-    currentView: function(newView, oldView) {
-      console.log(
-        `View changed from "${oldView}" (${this.localhostServers[oldView].url}) to "${newView}" ((${this.localhostServers[newView].url}))...`
-      );
-      const { isServer, component } = getCurrentComponent();
-      if (isServer) {
-        this.currentViewTitle.set(component.displayName); // Server from localhostServers
+      return false;
+    },
+    currentComponent: function() {
+      if (this.currentComponentIsServer) {
+        return this.localhostServers[this.currentView];
       } else {
-        this.currentViewTitle.set(component.name); // OterViews Component
+        return this.otherViews[this.currentView - this.localhostServers.length];
       }
-      // TODO: retreive component or server name and bind it instead of navbar title
     }
   },
 

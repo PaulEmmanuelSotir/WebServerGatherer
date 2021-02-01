@@ -4,24 +4,60 @@
       <v-col class="mb-4">
         <!-- TODO: Allow both form and config setting from code editor -->
         <v-form ref="settingsForm">
-          <v-checkbox
-            v-model="settings.autoLocahostScan"
-            label="Automatic localhost server scan"
-          />
-          <v-text-field
-            v-model="settings.foo"
-            :rules="rules.emailRules"
-            type="text"
-            label="foo"
-          />
-          <v-slider
-            v-model="settings.scanRefreshRate"
-            label="Auto scan refresh rate"
-            max="100"
-            min="1"
-            thumb-label="always"
-          />
-          <!-- ... -->
+          <v-expansion-panels
+            accordion
+            multiple
+            focusable
+            v-model="curr_panels"
+          >
+            <v-expansion-panel expand>
+              <v-expansion-panel-header>
+                Front Settings
+              </v-expansion-panel-header>
+              <v-expansion-panel-content>
+                <v-checkbox
+                  v-model="settings.autoLocahostScan"
+                  label="Automatic localhost server scan"
+                />
+                <v-text-field
+                  v-model="settings.foo"
+                  :rules="rules.emailRules"
+                  type="text"
+                  label="foo"
+                />
+                <v-slider
+                  v-model="settings.scanRefreshRate"
+                  label="Auto scan refresh rate"
+                  max="100"
+                  min="1"
+                  thumb-label="always"
+                />
+                <!-- ... -->
+              </v-expansion-panel-content>
+            </v-expansion-panel>
+
+            <v-expansion-panel expand>
+              <v-expansion-panel-header>
+                Backend(s) WebServer profiles
+              </v-expansion-panel-header>
+              <v-expansion-panel-content>
+                TODO...
+              </v-expansion-panel-content>
+            </v-expansion-panel>
+
+            <v-expansion-panel expand>
+              <v-expansion-panel-header>
+                Backend(s) SSH connections
+              </v-expansion-panel-header>
+              <v-expansion-panel-content>
+                <v-icon>
+                  mdi-key-variant
+                </v-icon>
+
+                TODO...
+              </v-expansion-panel-content>
+            </v-expansion-panel>
+          </v-expansion-panels>
         </v-form>
       </v-col>
 
@@ -110,7 +146,8 @@ export default {
       autoLocahostScan: false,
       scanRefreshRate: 0,
       foo: "foo text field"
-    }
+    },
+    curr_panels: [0, 1, 2]
   }),
   watch: {
     settings: "validate"
