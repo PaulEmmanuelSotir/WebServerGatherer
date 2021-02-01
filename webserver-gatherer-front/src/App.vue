@@ -1,70 +1,100 @@
 <template>
   <v-app>
     <v-app-bar color="primary" dark app>
-      <div class="d-flex align-center flex-wrap">
+      <v-container class="d-flex align-center" style="width: 100%">
         <!-- TODO: Add support for URL arddress text box, "Add to backend server profiles" button, "Ignore this port on ... bakend" button, and "Duplicate tab (creates a new profile which browses to current URL)"  -->
         <v-app-bar-nav-icon
           @click="drawer = !drawer"
-          class="flex-shrink-1"
+          class="flex-shrink-1 flex-grow-0"
         ></v-app-bar-nav-icon>
-        <v-divider class="flex-shrink-1">vertical</v-divider>
         <div
-          v-if="
-            currentComponent !== null && typeof currentComponent !== 'undefined'
-          "
+          class="d-flex align-center flex-grow-1 flex-shrink-1"
+          v-if="currentComponent !== null"
         >
-          <v-icon class="flex-shrink-1">{{ currentComponent.icon }}</v-icon>
-          <v-toolbar-title class="flex-shrink-1">{{
-            currentComponentIsServer
-              ? currentComponent.displayName
-              : currentComponent.name
-          }}</v-toolbar-title>
-
-          <div class="d-flex align-center" v-if="currentComponentIsServer">
-            <v-text-field
-              class="flex-grow-1"
-              type="text"
-              label="URL"
-              readonly
-              value="http://localhost:????/"
-            />
-            <v-tooltip bottom>
-              <template v-slot:activator="{ on, attrs }">
-                <v-btn text v-bind="attrs" v-on="on">
-                  <v-icon class="white">mdi-text-box-close</v-icon>
-                </v-btn>
-              </template>
-              <span>
-                Ignore any WebServer listenning on port
-                "{currentComponent.port}" for this backend (can be changed in
-                settings view)
-              </span>
-            </v-tooltip>
-            <v-tooltip bottom v-if="currentComponent.hasConfigProfile">
-              <template v-slot:activator="{ on, attrs }">
-                <v-btn text v-bind="attrs" v-on="on">
-                  <v-icon class="white">mdi-text-box-plus</v-icon>
-                </v-btn>
-              </template>
-              <span>
-                Create backend profile for "{{ currentComponent.name }}"
-                WebServer (can be changed in settings view)
-              </span>
-            </v-tooltip>
-            <v-tooltip bottom v-if="!currentComponent.hasConfigProfile">
-              <template v-slot:activator="{ on, attrs }">
-                <v-btn text v-bind="attrs" v-on="on">
-                  <v-icon class="white">mdi-book-edit</v-icon>
-                </v-btn>
-              </template>
-              <span>
-                Modify backend profile for "{{ currentComponent.view.name }}"
-                WebServer
-              </span>
-            </v-tooltip>
-          </div>
+          <v-icon
+            class="flex-shrink-1 flex-grow-0 ma-1"
+            v-if="!currentComponentIsServer"
+            >{{ currentComponent.icon }}</v-icon
+          >
+          <v-toolbar-title
+            class="flex-shrink-1 flex-grow-0"
+            v-if="
+              !currentComponentIsServer || currentComponent.hasConfigProfile
+            "
+            >{{ currentComponent.name }}</v-toolbar-title
+          >
+          <v-text-field
+            class="flex-grow-1 flex-shrink-1 ml-4 mr-4 mt-7 centered-input"
+            type="text"
+            :prepend-inner-icon="currentComponent.icon"
+            clearable
+            single-line
+            solo-inverted
+            rounded
+            dense
+            :value="currentComponent.url"
+            v-if="currentComponentIsServer"
+          >
+            <template v-slot:progress>
+              <v-progress-linear
+                class="mr-4 ml-4"
+                v-if="webserverProgress != 100"
+                :value="webserverProgress"
+                color="white"
+                absolute
+                height="4"
+              ></v-progress-linear>
+            </template>
+          </v-text-field>
+          <v-tooltip
+            bottom
+            v-if="
+              currentComponentIsServer && !currentComponent.hasConfigProfile
+            "
+            class="flex-shrink-1 flex-grow-0"
+          >
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn text v-bind="attrs" v-on="on">
+                <v-icon>mdi-server-plus</v-icon>
+              </v-btn>
+            </template>
+            <span>
+              Create backend profile for "{{ currentComponent.name }}" WebServer
+              (can be changed in settings view)
+            </span>
+          </v-tooltip>
+          <v-tooltip
+            bottom
+            v-if="currentComponentIsServer && currentComponent.hasConfigProfile"
+            class="flex-shrink-1 flex-grow-0"
+          >
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn text v-bind="attrs" v-on="on">
+                <v-icon>mdi-pencil</v-icon>
+              </v-btn>
+            </template>
+            <span>
+              Modify backend profile for "{{ currentComponent.name }}" WebServer
+            </span>
+          </v-tooltip>
+          <v-tooltip
+            bottom
+            class="flex-shrink-1 flex-grow-0"
+            v-if="currentComponentIsServer"
+          >
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn text v-bind="attrs" v-on="on">
+                <v-icon>mdi-filter-remove</v-icon>
+              </v-btn>
+            </template>
+            <span>
+              Ignore any WebServer listening on port "{{
+                currentComponent.port
+              }}" for this backend (can be changed in settings view)
+            </span>
+          </v-tooltip>
         </div>
-      </div>
+      </v-container>
     </v-app-bar>
 
     <v-navigation-drawer class="deep-blue accent-4" v-model="drawer" app dark>
@@ -78,7 +108,7 @@
 
       <v-divider></v-divider>
 
-      <!-- Listenning web servers -->
+      <!-- listening web servers -->
       <v-list dense nav>
         <!-- TODO: Change color of each servers wit it respective main color from its webview and display a preview tumbail on over -->
         <v-list-item-group mandatory v-model="currentView">
@@ -223,7 +253,7 @@ class Server {
   }
 
   get displayName() {
-    const default_name = `Web-Server listenning at "${this.url}"`;
+    const default_name = `Web-Server listening at "${this.url}"`;
     return this.hasConfigProfile
       ? this.configProfile.name || default_name
       : default_name;
@@ -269,7 +299,7 @@ class Server {
 
 function scanLocalhost() {
   // return new Promise(resolve => {
-  // TODO: Scan localhost ports for servers listenning and yield them asynchronously into an Array
+  // TODO: Scan localhost ports for servers listening and yield them asynchronously into an Array
   // TODO: Pass this.config promise and load servers on config.then
   const servers = [
     new Server(8888, "127.0.0.1", { name: "Jupyter Notebook", id: 45645646 }),
@@ -307,12 +337,12 @@ export default {
       },
       {
         name: "Console",
-        icon: "mdi-console-line",
+        icon: "mdi-console",
         component: "console"
       },
       {
         name: "Settings",
-        icon: "mdi-cogs",
+        icon: "mdi-settings",
         component: "settings"
       }
     ]
@@ -320,27 +350,36 @@ export default {
 
   computed: {
     conf: loadConfig,
+    webserverProgress: function() {
+      // TODO: return download progress from webview...
+      return 33; //(new Date().getSeconds() * 2) / 120;
+    },
     subtitle: function() {
       return !Array.isArray(this.localhostServers) ||
         this.localhostServers.length === 0
-        ? "No listenning server found"
-        : `${this.localhostServers.length} listenning server found`;
+        ? "No listening server found"
+        : `${this.localhostServers.length} listening server found`;
     },
     currentComponentIsServer: function() {
       if (
         typeof this.currentView !== "undefined" &&
         this.currentView !== null
       ) {
-        return this.currentView >= this.localhostServers.length;
+        return this.currentView < this.localhostServers.length;
       }
       return false;
     },
     currentComponent: function() {
-      if (this.currentComponentIsServer) {
-        return this.localhostServers[this.currentView];
-      } else {
-        return this.otherViews[this.currentView - this.localhostServers.length];
+      const comp_list = this.currentComponentIsServer
+        ? this.localhostServers
+        : this.otherViews;
+      const idx =
+        this.currentView -
+        (this.currentComponentIsServer ? 0 : this.localhostServers.length);
+      if (idx > comp_list.length) {
+        return null;
       }
+      return comp_list[idx];
     }
   },
 
@@ -363,5 +402,8 @@ export default {
 .full-height-width {
   height: 100%;
   width: 100%;
+}
+.centered-input >>> input {
+  text-align: center;
 }
 </style>
