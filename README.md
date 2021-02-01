@@ -50,6 +50,7 @@ _**legend**: ♻ = WIP; 💤: TODO; 💥 = IMPORTANT; 👍 = DONE (doesn't lists
 - ♻ Local/Front settings view
 - ♻ Implement webserver profiles setup from settings view and allow webserver (re)start
 - ♻ Implement calls to backend API for webservers scanning and kill
+- ♻ Allow webservers webview browsing without openning a new BrowserWindow (e.g. Jupyter notebook shouldn't open a new BrowserWindow when openning a notebook) + show webserver URL on app bar
 - ♻ Rename all remaning occurences of "Dashboard Gatherer" into "WebServer Gatherer"
 - 💤 Gather webservers and backend settings view by remote server to which their repective backend API belongs to
 - 💤 Implement needed checks and error handling to ensure a webserver discovered by backend API ports scanning is actually returning a valid webpage (backend API only scans for any open TCP ports)

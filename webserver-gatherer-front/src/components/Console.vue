@@ -1,18 +1,15 @@
 <template>
-  <v-container id="settings">
-    <v-row class="text-center">
-      <v-col class="mb-4">
-        Console view...
-        <strong>Yet to be implemented...</strong>
+  <v-container id="settings" class="ma-0 pa-0 full-height-width">
+    <v-row class="text-center full-height-width">
+      <v-col class="mb-4 full-height-width">
+        <div id="terminal" class="full-height-width"></div>
       </v-col>
     </v-row>
   </v-container>
 </template>
 
 <script>
-var term = new Terminal();
-term.open(document.getElementById("terminal"));
-term.write("ls -alh");
+import { Terminal } from "xterm";
 
 export default {
   name: "console",
@@ -20,8 +17,18 @@ export default {
   data: () => ({
     content: "...",
     currentPrompt: "ls -alh ."
-  })
+  }),
+  mounted: function() {
+    var term = new Terminal();
+    term.open(document.getElementById("terminal"));
+    term.write("ls -alh");
+  }
 };
 </script>
 
-<style scoped></style>
+<style>
+.full-height-width {
+  height: 100%;
+  width: 100%;
+}
+</style>
