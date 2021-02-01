@@ -13,16 +13,17 @@ Some features of WebServer UI Gatherer are:
 
 -
 
-## Install instructions
+## Install instructions (WIP)
 
 In order to install this Web Application on your server, follow the following steps:
 
 ``` shell
 git clone https://github.com/PaulEmmanuelSotir/DashboardWebUIGatherer.git
-cd ./DashboardWebUIGatherer
+cd ./DashboardWebUIGatherer/webserver-gatherer-front
 npm install
-# Once dependencies are installed, you will be able to run Web UI server like so:
-# TODO: ...
+npm run build
+# Once dependencies are installed, you will be able to run electron app like so:
+npm run start
 ```
 
 ## Configuration and usage
