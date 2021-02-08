@@ -1,5 +1,5 @@
 <template>
-  <v-container id="settings" class="ma-0 pa-0 full-height-width">
+  <v-container id="console" class="ma-0 pa-0 full-height-width">
     <v-row class="text-center full-height-width">
       <v-col class="mb-4 full-height-width">
         <div id="terminal" class="full-height-width"></div>

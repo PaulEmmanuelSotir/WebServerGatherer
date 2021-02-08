@@ -1,5 +1,5 @@
 <template>
-  <v-container id="dashboard" class="ma-0 pa-0 full-height-width">
+  <v-container id="webserverView" class="ma-0 pa-0 full-height-width">
     <div class="dashgray full-height-width">
       <webview
         :id="`${server.displayName}-webview`"
@@ -15,7 +15,7 @@
       ></webview>
       <!-- <iframe
             :title="`'${server.displayName}' web server webview ('${server.url}')`"
-            ref="dashboardIFrame"
+            ref="webserverViewIFrame"
             frameborder="0"
             style="width: 100%; height: 100%"
             :src="server.url"
@@ -32,7 +32,7 @@
 
 <script>
 export default {
-  name: "dashboard",
+  name: "webserver-view",
   props: {
     server: {
       type: Object,
@@ -41,7 +41,7 @@ export default {
         // TODO: use javascript class prototypes instead?
         if (
           typeof server.port === "undefined" ||
-          typeof server.domain === "undefined"
+          typeof server.hostname === "undefined"
         ) {
           return false;
         }

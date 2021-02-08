@@ -1,5 +1,5 @@
 <template>
-  <v-container id="settings">
+  <v-container id="serversTileView">
     <v-row class="text-center">
       <v-col class="mb-4">
         Servers tile view...
