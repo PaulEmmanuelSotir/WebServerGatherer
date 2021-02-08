@@ -2,17 +2,20 @@
 # -*- coding: utf-8 -*-
 """ REST API endpoints for interaction with WebServer Gatherer backend configuration """
 import os
+import uuid
 import json
 import shutil
 import logging
 from pathlib import Path
 from enum import unique, Enum
-from typing import Optional, Dict, Any, Union, Tuple
+from typing import Optional, Dict, Any, Union, Tuple, List
 
 from fastapi import FastAPI, Body, status, HTTPException, File, UploadFile
 from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.encoders import jsonable_encoder
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, conlist, Field, AnyHttpUrl
+from pydantic.types import PositiveFloat, PositiveInt
+
 
 __all__ = ['BACKEND_DATA_ROOT', 'CONFIG_PATH', 'Config', 'ConfigEditPolicy', 'write_config', 'read_config', 'define_api']
 __author__ = 'Paul-Emmanuel Sotir'
@@ -22,15 +25,27 @@ BACKEND_DATA_ROOT = Path('./')
 CONFIG_PATH = BACKEND_DATA_ROOT / 'config.json'
 
 
+class WebServerProfile(BaseModel):
+    # TODO: add icon field, storing latest icon retreived from webserver
+    id: uuid.UUID
+    url: AnyHttpUrl
+    name: str
+    start_cmd: str = Field("", description="Optional string parameter which may be used to (re)start webserver")
+    service_name: str = ""
+    # port: Union[PositiveInt, PortRange] ^ Field(..., description="Port on which webserver is expected to be listenning. "
+    #                                                              "If 'port' is a range instead of a single integer, webserver could be retreived according to its service name. "
+    #                                                              "Profiles with port range thus should have a 'service_name'.")
+
+
 class Config(BaseModel):
     # TODO: implement more validation code here...
 
     localhostScanRefreshRate: int = 100
-    test: str = "testy string, for sure ;-)"
+    webserverProfiles: List[WebServerProfile] = []
 
 
-# TODO: replace tis object instance by a cleaner lifecycle variable
-current_config = Config()
+# TODO: replace this object instance by a cleaner lifecycle variable
+current_config = None
 
 
 @unique
