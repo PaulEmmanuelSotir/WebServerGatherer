@@ -16,6 +16,7 @@ from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, ValidationError, conlist, Field, AnyHttpUrl
 from pydantic.types import PositiveFloat, PositiveInt
 
+import webservers
 
 __all__ = ['BACKEND_DATA_ROOT', 'CONFIG_PATH', 'Config', 'ConfigEditPolicy', 'write_config', 'read_config', 'define_api']
 __author__ = 'Paul-Emmanuel Sotir'
@@ -25,23 +26,18 @@ BACKEND_DATA_ROOT = Path('./')
 CONFIG_PATH = BACKEND_DATA_ROOT / 'config.json'
 
 
-class WebServerProfile(BaseModel):
-    # TODO: add icon field, storing latest icon retreived from webserver
-    id: uuid.UUID
-    url: AnyHttpUrl
-    name: str
-    start_cmd: str = Field("", description="Optional string parameter which may be used to (re)start webserver")
-    service_name: str = ""
-    # port: Union[PositiveInt, PortRange] ^ Field(..., description="Port on which webserver is expected to be listenning. "
-    #                                                              "If 'port' is a range instead of a single integer, webserver could be retreived according to its service name. "
-    #                                                              "Profiles with port range thus should have a 'service_name'.")
+class StartCommand(BaseModel):
+    """ Webserver start command with an optional associated name. Can be used to start webserver(s) from front trhought this backend API. """
+    cmd: str
+    name: Optional[str] = None
+    cwd: Optional[str] = Field(None, description="Optional directory path field in which 'cmd' command will be executed.")
 
 
 class Config(BaseModel):
     # TODO: implement more validation code here...
 
     localhostScanRefreshRate: int = 100
-    webserverProfiles: List[WebServerProfile] = []
+    webserverStartCommands: List[StartCommand] = Field([], description="List of webserver start commands which may be used to start a webserver")
 
 
 # TODO: replace this object instance by a cleaner lifecycle variable

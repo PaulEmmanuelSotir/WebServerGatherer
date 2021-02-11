@@ -1,1 +1,10 @@
-{"localhostScanRefreshRate": 99, "test": "MachinBidule"}
+{
+  "localhostScanRefreshRate": 100,
+  "webserverStartCommands": [
+    {
+      "cmd": "jupyter notebook",
+      "name": "JupyterNotebook",
+      "cwd": "~"
+    }
+  ]
+}
