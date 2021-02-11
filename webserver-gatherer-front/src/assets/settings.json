@@ -1,4 +1,5 @@
 {
     "autoLocahostScan": false,
-    "refreshRate": 100
+    "refreshRate": 100,
+    "ignorePorts": [5466, 2342]
 }

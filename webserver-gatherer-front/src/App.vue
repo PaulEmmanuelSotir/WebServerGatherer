@@ -19,7 +19,7 @@
           <v-toolbar-title
             class="flex-shrink-1 flex-grow-0"
             v-if="
-              !currentComponentIsServer || currentComponent.hasConfigProfile
+              !currentComponentIsServer || currentComponent.info.latestPageTitle
             "
             >{{ currentComponent.name }}</v-toolbar-title
           >
@@ -32,7 +32,7 @@
             solo-inverted
             rounded
             dense
-            :value="currentComponent.url"
+            :value="currentComponent.currentURL"
             v-if="currentComponentIsServer"
           >
             <template v-slot:progress>
@@ -46,7 +46,7 @@
               ></v-progress-linear>
             </template>
           </v-text-field>
-          <v-tooltip
+          <!-- <v-tooltip
             bottom
             v-if="
               currentComponentIsServer && !currentComponent.hasConfigProfile
@@ -76,7 +76,7 @@
             <span>
               Modify backend profile for "{{ currentComponent.name }}" WebServer
             </span>
-          </v-tooltip>
+          </v-tooltip> -->
           <v-tooltip
             bottom
             class="flex-shrink-1 flex-grow-0"
@@ -121,7 +121,7 @@
         <v-list-item-group mandatory v-model="$store.state.currentView">
           <v-list-item
             v-for="server in $store.state.servers"
-            :key="server.id"
+            :key="server.baseURL"
             link
           >
             <v-list-item-icon>
@@ -132,9 +132,9 @@
               <v-list-item-title>
                 {{ server.name }}
               </v-list-item-title>
-              <v-list-item-subtitle v-if="server.hasConfigProfile">
-                <!-- I.e., if server.name is other than url (name from server.configProfile.name) -->
-                {{ server.url }}
+              <v-list-item-subtitle v-if="server.info.latestPageTitle">
+                <!-- I.e., if server.name is other than url (name from server.info.latestPageTitle) -->
+                {{ server.baseURL }}
               </v-list-item-subtitle>
             </v-list-item-content>
           </v-list-item>
@@ -183,7 +183,7 @@
           <v-tab-item
             class="full-height-width"
             v-for="server in $store.state.servers"
-            :key="server.id"
+            :key="server.baseURL"
           >
             <v-lazy class="full-height-width">
               <keep-alive class="full-height-width">

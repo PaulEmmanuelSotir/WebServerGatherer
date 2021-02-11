@@ -4,37 +4,51 @@ import Vuex from "vuex";
 
 Vue.use(Vuex);
 
+// For now, we assume backend API is listennin on tis port (assumed to be a free and allowed port when deploying backend API on remote server or localhost)
+const backend_port = 8546;
+
+/** notNullNorUndefined
+ *  Small helper function wich may be used to test for a value to be non-null and not 'undefined'. (May be usefull for easier conditions in vue templates)
+ * May take an additional 'type' argument if type check on value is also needed ('null' by default, ie, no additional type check)
+ **/
+function notNullNorUndefined(val, type = null) {
+  const type_check = type !== null ? typeof val === type : true;
+  return typeof val !== "undefined" && val !== null && type_check;
+}
+
+/** Server class
+ *
+ */
 class Server {
-  constructor(port, hostname, configProfile, isHttps = false) {
+  constructor(port, hostname, isHttps = false) {
     this.port = port;
     this.hostname = hostname;
-    this.configProfile = configProfile;
-    this.mean_size = 0.0;
-    this.sizeCount = 0;
-    this.status = null;
     this.isHttps = isHttps;
+    this.loading = false;
+    this.crashed = false;
+    this.failedLoading = false;
+    this.errorInfo = null;
+
+    this.info = {
+      currentPath: "",
+      latestIcon: null,
+      latestStatus: null,
+      latestPageTitle: null,
+      latestThumbnail: null,
+      meanSize: null,
+      sizeRuningMeanCounter: 0,
+      errorLog: []
+    };
   }
 
-  get hasConfigProfile() {
-    return (
-      typeof this.configProfile !== "undefined" && this.configProfile !== null
-    );
-  }
-
-  get id() {
-    // A Web Server is either identified by its config profile, if it exists, or its URL
-    return this.hasConfigProfile ? this.configProfile.id : this.url;
+  get failed() {
+    return this.crashed || this.failedLoading;
   }
 
   get name() {
-    return this.hasConfigProfile ? this.configProfile.name : `"${this.url}"`;
-  }
-
-  get displayName() {
-    const default_name = `Web-Server listening at "${this.url}"`;
-    return this.hasConfigProfile
-      ? this.configProfile.name || default_name
-      : default_name;
+    return this.info.latestPageTitle
+      ? this.info.latestPageTitle
+      : `"${this.baseURL}"`;
   }
 
   get sizeMetric() {
@@ -45,17 +59,21 @@ class Server {
     return this.hostname === "localhost" || this.hostname === "127.0.0.1"; // TODO: not as robust/reliable as intended: Remove this property if possible
   }
 
-  get url() {
+  get baseURL() {
     const hostname =
       this.hostname === "localhost" ? "127.0.0.1" : this.hostname;
     const port = this.port ? `:${this.port}` : "";
-    return `${this.isHttps ? "https" : "http"}://${hostname}${port}`;
+    return `${this.isHttps ? "https" : "http"}://${hostname}${port}/`;
+  }
+
+  get currentURL() {
+    return `${this.baseURL}${this.info.currentPath}`;
   }
 
   get icon() {
-    // TODO: allow icon from config profile and update icon (from v-icon to image or svg one) once loaded if available + fallback to default icon (mdi-web or mdi-web-clock is loading)
-    if (this.hasConfigProfile && typeof this.configProfile.icon === "string") {
-      return this.configProfile.icon;
+    // TODO: update icon (from v-icon to image or svg one) once loaded if available + fallback to default icon (mdi-web or mdi-web-clock is loading)
+    if (notNullNorUndefined(this.info.latestIcon, "string")) {
+      return this.info.latestIcon;
     }
     if (this.status !== 200) {
       return "mdi-web"; // mdi-web-clock
@@ -63,40 +81,45 @@ class Server {
     return "mdi-web";
   }
 
-  // TODO : if needed, move these functions to mutation/action vuex logic
-  // updateStatus(status) {
-  //   this.status = status;
+  // updateInfoFromWebViewContent(/*webview*/) {
+  //   //const content = webview.getWebContents();
+  //   // TODO: fill/update this.info fields from "content"
+  //   // ...
   // }
 
   // updateSizeMetric(latestSize) {
   //   // Update running mean of page size (size metric used for having an approximate idea of page size)
-  //   this.sizeCount += 1;
+  //   this.sizeRuningMeanCounter += 1;
+  //   if (this.meanSize === null)
+  //    this.meanSize = 0.
   //   this.size =
-  //     this.mean_size / (1 + 1.0 / this.sizeCount) +
-  //     latestSize / (this.sizeCount + 1);
+  //     this.meanSize * (this.sizeRuningMeanCounter - 1) + latestSize / this.sizeRuningMeanCounter;
   // }
 }
 
 const DEFAULT_SERVERS = [
-  new Server(8888, "127.0.0.1", {
-    name: "Jupyter Notebook",
-    id: 45645646
-  }),
-  new Server(8881, "127.0.0.1", null),
-  new Server(9001, "127.0.0.1", { name: "Tensorboard", id: 345354353 })
+  new Server(8888, "127.0.0.1"),
+  new Server(8881, "127.0.0.1", true),
+  new Server(9001, "127.0.0.1")
 ];
 
 class Backend {
-  constructor(name, hostname, apiPort = 8000, sshcreds = null, sshopts = {}) {
+  constructor(
+    name,
+    hostname,
+    sshcreds = null,
+    sshopts = {},
+    apiPort = backend_port
+  ) {
     this.name = name;
     this.hostname = hostname;
-    this.apiPort = apiPort;
     this.sshcreds = sshcreds;
     this.sshopts = sshopts;
+    this.apiPort = apiPort;
   }
 
   get is_localhost() {
-    return this.url === "localhost" || this.url === "127.0.0.1";
+    return this.hostname === "localhost" || this.hostname === "127.0.0.1";
   }
 }
 
@@ -168,7 +191,7 @@ const actions = {
         method: "GET",
         protocol: "http:",
         hostname: backend.hostname,
-        port: 443,
+        port: backend_port,
         path: "/"
       });
       request.on("response", response => {
