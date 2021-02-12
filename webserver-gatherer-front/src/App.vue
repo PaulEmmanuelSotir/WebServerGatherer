@@ -173,6 +173,32 @@
     </v-navigation-drawer>
 
     <v-main>
+      <v-snackbar
+        v-model="$store.state.errorSnackbar"
+        :timeout="8000"
+        :multi-line="true"
+        color="accent-4"
+        elevation="16"
+      >
+        <p class="text-justify">
+          <span class="font-weight-bold">
+            Unexpected error have been thrown:<br />
+          </span>
+          "<em>{{ $store.state.errorMessage }}</em
+          >"
+        </p>
+        <template v-slot:action="{ attrs }">
+          <v-btn
+            text
+            color="red"
+            v-bind="attrs"
+            @click="$store.commit('closeErrorSnackbar')"
+          >
+            Close
+          </v-btn>
+        </template>
+      </v-snackbar>
+
       <v-container fill-height class="ma-0 pa-0">
         <v-tabs-items
           v-model="$store.state.currentView"
@@ -246,8 +272,10 @@ export default {
   },
 
   errorCaptured: function(err, component, info) {
-    console.log(`ERR: "${component}" component error: "${err}"; info: ${info}`);
-    return true; // Error should be propagating further
+    const err_message = `"${component}" component thrown unexpected error. (error: "${err}"; error info: "${info}")`;
+    console.log(`ERR: "${err_message}"`);
+    this.$store.commit("unexpectedError", err_message);
+    return this.$store.state.debug; // Error should be propagating further in debug
   }
 };
 </script>

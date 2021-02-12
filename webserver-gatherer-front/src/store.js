@@ -127,6 +127,8 @@ const state = {
   debug: process.env.NODE_ENV !== "production",
   availableBackends: [new Backend("localhost", "127.0.0.1")],
   drawer: null,
+  errorSnackbar: false,
+  errorMessage: "",
   currentView: 0,
   title: "Web-Server Gatherer",
   version: "0.0.1",
@@ -161,6 +163,14 @@ const mutations = {
   },
   updateServers(state, scanned_servers) {
     state.servers = scanned_servers; // Update state servers list to the newly scanned one from current backend
+  },
+  unexpectedError(state, error_message) {
+    state.errorMessage = error_message;
+    state.errorSnackbar = true;
+  },
+  closeErrorSnackbar(state) {
+    state.errorMessage = "";
+    state.errorSnackbar = false;
   }
 };
 
