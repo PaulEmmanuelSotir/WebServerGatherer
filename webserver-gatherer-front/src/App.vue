@@ -242,6 +242,7 @@ import ServersTileView from "@/components/ServersTileView.vue";
 import WebserverView from "@/components/Webserver.vue";
 import Settings from "@/components/Settings.vue";
 import Console from "@/components/Console.vue";
+import Editor from "@/components/Editor.vue";
 
 export default {
   name: "webserver-gatherer",
@@ -250,18 +251,21 @@ export default {
     serversTileView: ServersTileView,
     webserverView: WebserverView,
     settings: Settings,
-    console: Console
+    console: Console,
+    editor: Editor
   },
 
-  computed: mapGetters([
-    "config",
-    "webserverProgress",
-    "subtitle",
-    "currentComponentIsServer",
-    "currentComponent"
-  ]),
+  computed: {
+    ...mapGetters([
+      "config",
+      "webserverProgress",
+      "subtitle",
+      "currentComponentIsServer",
+      "currentComponent"
+    ])
+  },
 
-  methods: mapActions(["scanWebservers"]),
+  methods: { ...mapActions(["scanWebservers"]) },
 
   created: function() {
     console.log("!created!");

@@ -1,3 +1,4 @@
+const MonacoWebpackPlugin = require("monaco-editor-webpack-plugin");
 const CompressionPlugin = require("compression-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const VueLoaderPlugin = require("vue-loader/lib/plugin");
@@ -28,7 +29,8 @@ module.exports = {
       title: "WebServer Gatherer",
       template: path.resolve(__dirname, "./public/index.html"),
       favicon: path.resolve(__dirname, "./public/favicon.ico")
-    })
+    }),
+    new MonacoWebpackPlugin()
   ],
 
   module: {
