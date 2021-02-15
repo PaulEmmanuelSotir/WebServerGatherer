@@ -24,6 +24,8 @@ npm install
 npm run build
 # Once dependencies are installed, you will be able to run electron app like so:
 npm run start
+
+
 ```
 
 ## Configuration and usage
@@ -45,18 +47,18 @@ _**legend**: ♻ = WIP; 💤: TODO; 💥 = IMPORTANT; 👍 = DONE (doesn't lists
 - 👍 Implement webserver killing backend API
 - 👍 Implement config (get/set) backend API
 - 👍 Implement electron front app webserver views (using electron's 'WebView')
+- 👍 Implement regular calls to backend API from front to update webservers with port scan (nmap)
 - ♻ Implement webserver start/restart backend API
 - ♻ Implement console view allowing to run a terminal on remote server(s) or localhost fron front app (using xterm)
 - ♻ Local/Front settings view
-- ♻ Implement webserver profiles setup from settings view and allow webserver (re)start
-- ♻ Implement calls to backend API for webservers scanning and kill
+- ♻ Implement call to backend API from front to kill webserver
 - ♻ Allow webservers webview browsing without openning a new BrowserWindow (e.g. Jupyter notebook shouldn't open a new BrowserWindow when openning a notebook) + show webserver URL on app bar
 - ♻ Rename all remaning occurences of "Dashboard Gatherer" into "WebServer Gatherer"
+- ♻ Allow user to ignore some port(s) or webserver service name(s) from backend settings view or directly from a webserver view
 - 💤 Gather webservers and backend settings view by remote server to which their repective backend API belongs to
 - 💤 Implement needed checks and error handling to ensure a webserver discovered by backend API ports scanning is actually returning a valid webpage (backend API only scans for any open TCP ports)
 - 💤 Implement webservers tile view in front app
-- 💤 Allow user to ignore some port(s) or webserver service name(s) from backend settings view or directly fron a discovered webserver view
-- 💤 Implement remote server SSH connection setup and secure SSH credentials storage with 2FA  
-- 💤 Implement automatic Python backend API deployement throught SSH to configured remote server(s)
+- 💤 Implement remote server SSH connection setup and secure SSH credentials storage with 2FA and/or allow to connect to an existing SSH agent  
+- 💤 Implement automatic Python backend API deployement throught SSH tunnel to configured remote server(s)
 
 (☞ﾟヮﾟ)☞
