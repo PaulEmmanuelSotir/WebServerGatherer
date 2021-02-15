@@ -150,7 +150,7 @@ components:
     WebServer:
       required:
         - port
-        - domain
+        - hostname
       properties:
         name:
           type: string

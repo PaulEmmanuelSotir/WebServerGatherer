@@ -20,7 +20,7 @@ __author__ = 'Paul-Emmanuel Sotir'
 class WebServer(BaseModel):
     """ A web server is, here, assumed to be a listenning/open port which uses TCP protocol """
     port: PositiveInt
-    domain: str = 'localhost'
+    hostname: str = 'localhost'
     """ Service name obtained from nmap scan process (NOTE: May not be adequate for user to be able identify a web server easily """
     service_name: Optional[str] = None
 
@@ -76,19 +76,19 @@ def scan_ports(ip: Union[str, IPvAnyAddress]) -> ScanResults:
     ip = str(ip)
 
     nmap = nmap3.NmapScanTechniques()
-    scan_result = nmap.nmap_tcp_scan(ip)
+    scan_result = nmap.nmap_tcp_scan(ip, args='-p0-')
     ports = scan_result[ip]['ports']
 
     # TODO: TEMP: Remove this line, debug only:
-    not_opened_servers = [WebServer(port=p['portid'], domain=ip, service_name=p['service']['name'] if 'service' in p else None) for p in ports if p['state'] != 'open']
+    not_opened_servers = [WebServer(port=p['portid'], hostname=ip, service_name=p['service']['name'] if 'service' in p else None) for p in ports if p['state'] != 'open']
     if(len(not_opened_servers) > 0):
         print(f'WebServer found from scan which are not in "open" state:\n\t"{not_opened_servers}"')
 
-    servers = [WebServer(port=p['portid'], domain=ip, service_name=p['service']['name'] if 'service' in p else None) for p in ports if p['state'] == 'open']
+    servers = [WebServer(port=p['portid'], hostname=ip, service_name=p['service']['name'] if 'service' in p else None) for p in ports if p['state'] == 'open']
 
     return ScanResults(servers=servers,
                        elapsed_seconds=float(scan_result['runtime']['elapsed']),  # Seconds
-                       cmd=f'{scan_result["stats"]["scanner"]} {scan_result["stats"]["args"]}',  # nmap command runned for tcp scan
+                       cmd=scan_result["stats"]["args"],  # nmap command runned for tcp scan
                        raw_nmap_result=scan_result)
 
 
