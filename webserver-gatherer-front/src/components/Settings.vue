@@ -142,11 +142,6 @@ export default {
 
   data: () => ({
     // TODO: load settings from config file
-    settings: {
-      autoLocahostScan: false,
-      scanRefreshRate: 0,
-      foo: "foo text field"
-    },
     curr_panels: [0, 1, 2]
   }),
   watch: {

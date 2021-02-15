@@ -3,26 +3,12 @@
     <v-app-bar color="primary" dark app>
       <v-container class="d-flex align-center" style="width: 100%">
         <!-- TODO: Add support for URL arddress text box, "Add to backend server profiles" button, "Ignore this port on ... bakend" button, and "Duplicate tab (creates a new profile which browses to current URL)"  -->
-        <v-app-bar-nav-icon
-          @click="$store.state.drawer = !$store.state.drawer"
-          class="flex-shrink-1 flex-grow-0"
-        ></v-app-bar-nav-icon>
-        <div
-          class="d-flex align-center flex-grow-1 flex-shrink-1"
-          v-if="currentComponent !== null"
-        >
-          <v-icon
-            class="flex-shrink-1 flex-grow-0 ma-1"
-            v-if="!currentComponentIsServer"
-            >{{ currentComponent.icon }}</v-icon
-          >
-          <v-toolbar-title
-            class="flex-shrink-1 flex-grow-0"
-            v-if="
-              !currentComponentIsServer || currentComponent.info.latestPageTitle
-            "
-            >{{ currentComponent.name }}</v-toolbar-title
-          >
+        <v-app-bar-nav-icon @click="$store.state.drawer = !$store.state.drawer" class="flex-shrink-1 flex-grow-0"></v-app-bar-nav-icon>
+        <div class="d-flex align-center flex-grow-1 flex-shrink-1" v-if="currentComponent !== null">
+          <v-icon class="flex-shrink-1 flex-grow-0 ma-1" v-if="!currentComponentIsServer">{{ currentComponent.icon }}</v-icon>
+          <v-toolbar-title class="flex-shrink-1 flex-grow-0" v-if="!currentComponentIsServer || currentComponent.info.latestPageTitle">{{
+            currentComponent.name
+          }}</v-toolbar-title>
           <v-text-field
             class="flex-grow-1 flex-shrink-1 ml-4 mr-4 mt-7 centered-input"
             type="text"
@@ -77,32 +63,21 @@
               Modify backend profile for "{{ currentComponent.name }}" WebServer
             </span>
           </v-tooltip> -->
-          <v-tooltip
-            bottom
-            class="flex-shrink-1 flex-grow-0"
-            v-if="currentComponentIsServer"
-          >
+          <v-tooltip bottom class="flex-shrink-1 flex-grow-0" v-if="currentComponentIsServer">
             <template v-slot:activator="{ on, attrs }">
               <v-btn text v-bind="attrs" v-on="on">
                 <v-icon>mdi-filter-remove</v-icon>
               </v-btn>
             </template>
             <span>
-              Ignore any WebServer listening on port "{{
-                currentComponent.port
-              }}" for this backend (can be changed in settings view)
+              Ignore any WebServer listening on port "{{ currentComponent.port }}" for this backend (can be changed in settings view)
             </span>
           </v-tooltip>
         </div>
       </v-container>
     </v-app-bar>
 
-    <v-navigation-drawer
-      class="deep-blue accent-4"
-      v-model="$store.state.drawer"
-      app
-      dark
-    >
+    <v-navigation-drawer class="deep-blue accent-4" v-model="$store.state.drawer" app dark>
       <!-- App title and status subtitle -->
       <v-list-item elevation="4">
         <v-list-item-content>
@@ -119,11 +94,7 @@
       <v-list dense nav>
         <!-- TODO: Change color of each servers wit it respective main color from its webview and display a preview tumbail on over -->
         <v-list-item-group mandatory v-model="$store.state.currentView">
-          <v-list-item
-            v-for="server in $store.state.servers"
-            :key="server.baseURL"
-            link
-          >
+          <v-list-item v-for="server in $store.state.servers" :key="server.baseURL" link>
             <v-list-item-icon>
               <v-icon>{{ server.icon }}</v-icon>
             </v-list-item-icon>
@@ -144,11 +115,7 @@
 
           <!-- Servers tiles/grid and settings views -->
 
-          <v-list-item
-            v-for="otherView in $store.state.otherViews"
-            :key="otherView.name"
-            link
-          >
+          <v-list-item v-for="otherView in $store.state.otherViews" :key="otherView.name" link>
             <v-list-item-icon>
               <v-icon> {{ otherView.icon }} </v-icon>
             </v-list-item-icon>
@@ -173,44 +140,22 @@
     </v-navigation-drawer>
 
     <v-main>
-      <v-snackbar
-        v-model="$store.state.errorSnackbar"
-        :timeout="8000"
-        :multi-line="true"
-        color="accent-4"
-        elevation="16"
-      >
+      <v-snackbar v-model="$store.state.errorSnackbar" :timeout="8000" :multi-line="true" color="accent-4" elevation="16">
         <p class="text-justify">
-          <span class="font-weight-bold">
-            Unexpected error have been thrown:<br />
-          </span>
+          <span class="font-weight-bold"> Unexpected error have been thrown:<br /> </span>
           "<em>{{ $store.state.errorMessage }}</em
           >"
         </p>
         <template v-slot:action="{ attrs }">
-          <v-btn
-            text
-            color="red"
-            v-bind="attrs"
-            @click="$store.commit('closeErrorSnackbar')"
-          >
+          <v-btn text color="red" v-bind="attrs" @click="$store.commit('closeErrorSnackbar')">
             Close
           </v-btn>
         </template>
       </v-snackbar>
 
       <v-container fill-height class="ma-0 pa-0">
-        <v-tabs-items
-          v-model="$store.state.currentView"
-          continuous
-          mandatory
-          class="full-height-width"
-        >
-          <v-tab-item
-            class="full-height-width"
-            v-for="server in $store.state.servers"
-            :key="server.baseURL"
-          >
+        <v-tabs-items v-model="$store.state.currentView" continuous mandatory class="full-height-width">
+          <v-tab-item class="full-height-width" v-for="server in $store.state.servers" :key="server.baseURL">
             <v-lazy class="full-height-width">
               <keep-alive class="full-height-width">
                 <webserver-view :server="server" />
@@ -218,11 +163,7 @@
             </v-lazy>
           </v-tab-item>
 
-          <v-tab-item
-            class="full-height-width"
-            v-for="otherView in $store.state.otherViews"
-            :key="otherView.name"
-          >
+          <v-tab-item class="full-height-width" v-for="otherView in $store.state.otherViews" :key="otherView.name">
             <v-lazy class="full-height-width">
               <keep-alive class="full-height-width">
                 <component :is="otherView.component"></component>
@@ -256,19 +197,14 @@ export default {
   },
 
   computed: {
-    ...mapGetters([
-      "config",
-      "webserverProgress",
-      "subtitle",
-      "currentComponentIsServer",
-      "currentComponent"
-    ])
+    ...mapGetters(["config", "webserverProgress", "subtitle", "currentComponentIsServer", "currentComponent"])
   },
 
-  methods: { ...mapActions(["scanWebservers"]) },
+  methods: { ...mapActions(["scanWebservers", "loadLocalSettings", "writeLocalSettings"]) },
 
   created: function() {
     console.log("!created!");
+    this.$store.dispatch("loadLocalSettings");
   },
 
   destroyed: function() {
@@ -276,9 +212,8 @@ export default {
   },
 
   errorCaptured: function(err, component, info) {
-    const err_message = `"${component}" component thrown unexpected error. (error: "${err}"; error info: "${info}")`;
-    console.log(`ERR: "${err_message}"`);
-    this.$store.commit("unexpectedError", err_message);
+    const errMessage = `"${component}" component thrown unexpected error. (error: "${err}"; error info: "${info}")`;
+    this.$store.commit("unexpectedError", `ERR: "${errMessage}"`);
     return this.$store.state.debug; // Error should be propagating further in debug
   }
 };

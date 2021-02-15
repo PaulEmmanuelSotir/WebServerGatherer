@@ -25,6 +25,7 @@
     "monaco-editor": "^0.22.3",
     "monaco-editor-webpack-plugin": "^3.0.0",
     "roboto-fontface": "*",
+    "superagent": "^6.1.0",
     "vue": "^2.6.11",
     "vuetify": "^2.2.11",
     "vuex": "^3.6.2",
