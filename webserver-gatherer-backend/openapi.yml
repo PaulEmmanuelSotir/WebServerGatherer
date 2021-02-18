@@ -21,7 +21,7 @@ paths:
       summary: Scan backend locahost for web servers
       operationId: scan
       description: |
-        Scan target host/ip address for listenning TCP ports and return a list of all web servers which have been found.
+        Scan target host/ip address for listening TCP ports and return a list of all web servers which have been found.
         A port range or list can be provided to restric/filter port lookup range.
       parameters:
         - in: query
@@ -51,22 +51,22 @@ paths:
     post:
       tags:
         - DoNotExpose
-      summary: Endpoint allowing to manage web server webservers (kill or restart)
+      summary: Endpoint allowing to kill webserver(s) listening on specified port(s)
       operationId: kill
       description: |
-        Endpoint allowing to kill or restart web server(s) on given port(s).
-        In case of Restart request, .
+        Endpoint allowing to kill webserver(s) listening on specified port(s).
+        Request body should be an array of single port(s) and/or port ranges (range specified by upper/lower bounds) (see '#/components/schemas/PortRange' schemas).
       responses:
         '201':
-          description: Management action(s) sucesfully performed on web server(s) 
+          description: Sucessfully killed webserver(s) process(es) listening at specified port(s) 
         '400':
-          description: Failed to execute management action(s) on given server (invalid action(s) or port(s))
+          description: Failed to kill listening process(es) on given port(s)
       requestBody:
-        description: Webserver management request body, determining action(s) to be taken on given web server port(s)
+        description: Kill request body should be an array of single port(s) and/or port ranges (range specified by upper/lower bounds) (see '#/components/schemas/PortRange' schemas).
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/WebserverKillOrRestart'
+              $ref: '#/components/schemas/PortRange'
   /console:
     post:
       tags:
@@ -178,43 +178,19 @@ components:
           items:
             $ref: '#/components/schemas/WebServer'
   
-    WebserverKillOrRestart:
-      required:
-        - ports
-        - action
-      properties:
-        actions:
-          type: array
-          items:
-            type: object
-            properties:
-              ports:
-                $ref: '#/components/schemas/PortRange'
-              action:
-                type: string
-                description: |
-                  Webserver management action to perform on its respective port(s)
-                enum: ["KILL", "RESTART"]
-
     PortRange:
-      default: '[0-9]+'
-      example: [8888, 8080, '9[0-9]{3}']
-      oneOf:
-        - type: string
-          format: regex
-        - type: integer
-        - type: array
-          items:
-            oneOf:
-              - type: string
-                format: regex
-              - type: integer
-        - type: object
-          properties:
-            min:
-              type: integer
-            max:
-              type: integer
+      default: [{lower: 0, upper: 65535}]
+      example: [8080, {lower: 8000, upper: 9000}]
+      type: array
+      items:
+        oneOf:
+          - type: integer
+          - type: object
+            properties:
+              lower:
+                type: integer
+              upper:
+                type: integer
 
     ConsoleExec:
       type: object

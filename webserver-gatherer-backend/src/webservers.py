@@ -13,7 +13,7 @@ import nmap3
 from fastapi import FastAPI, Body, status, HTTPException
 from pydantic import BaseModel, ValidationError, IPvAnyAddress, PositiveInt, conint, conlist, validator, ConstrainedStr, Field
 
-__all__ = ['WebServer', 'PortRange', 'ActionOnPorts', 'ScanResults', 'KillResults', 'scan_ports', 'get_webserver_pid', 'kill_webservers', 'restart_webserver', 'define_api']
+__all__ = ['WebServer', 'PortRange', 'ScanResults', 'KillResults', 'scan_ports', 'get_webserver_pid', 'kill_webservers', 'define_api']
 __author__ = 'Paul-Emmanuel Sotir'
 
 
@@ -36,15 +36,6 @@ class PortRange(BaseModel):
         return v
 
 
-class ActionOnPorts(BaseModel):
-    @unique
-    class Action(str, Enum):
-        KILL = 'KILL'
-        RESTART = 'RESTART'
-    ports: Union[PositiveInt, PortRange]
-    action: Action
-
-
 class ScanResults(BaseModel):
     servers: conlist(WebServer)
     elapsed_seconds: float
@@ -57,9 +48,9 @@ class KillResults(BaseModel):
         return_code: int
         success: bool
         info: str
-    action_on_ports: ActionOnPorts
-    cmd_results: Dict[str, CmdReturnCode] = Field(..., description="A dict which summarizes kill/restart command(s) by mapping each process id (pid(s) in string format to allow JSON serialization) "
-                                                                   "with its respective kill/restart CmdReturnCode (return code and success boolean).")
+    ports: Union[PositiveInt, PortRange]
+    cmd_results: Dict[str, CmdReturnCode] = Field(..., description="A dict which summarizes kill command(s) by mapping each process id (pid(s) in string format to allow JSON serialization) "
+                                                                   "with its respective kill CmdReturnCode (return code and success boolean).")
     pids_from_ports_cmd_result: CmdReturnCode = Field(..., description="Contain informations about pid(s) retreival from given port(s). "
                                                       "underlying command may return non-zero code or fail to find any process).")
     pids: conlist(int)
@@ -108,7 +99,7 @@ def get_webserver_pid(ports) -> Tuple[Optional[List[int]], Optional[KillResults.
             return None, KillResults.CmdReturnCode(return_code=sub.returncode, success=False, info=err_message)
     else:
         raise HTTPException(status.HTTP_501_NOT_IMPLEMENTED,
-                            f'Cant perform KILL/RESTART actions on "{sys.platform}" OS platform; Not yet implemented: relies on `lsof` and `kill` Unix commands.')
+                            f'Cant kill webserver on "{sys.platform}" OS platform; Not yet implemented: relies on `lsof` and `kill` Unix commands.')
 
 
 def kill_webservers(pids) -> Dict[str, KillResults.CmdReturnCode]:
@@ -128,18 +119,18 @@ def kill_webservers(pids) -> Dict[str, KillResults.CmdReturnCode]:
             results[str(server_pid)] = KillResults.CmdReturnCode(success=sub.returncode == os.EX_OK, return_code=sub.returncode, info=info)
     else:
         raise HTTPException(status.HTTP_501_NOT_IMPLEMENTED,
-                            f'Cant perform KILL/RESTART actions on "{sys.platform}" OS platform; Not yet implemented: relies on `lsof` and `kill` Unix commands.')
+                            f'Cant kill webserver on "{sys.platform}" OS platform; Not yet implemented: relies on `lsof` and `kill` Unix commands.')
     return results
 
 
-def restart_webserver(pids: List[int]) -> Dict[str, Any]:
-    kill_results = kill_webservers(pids)
-    raise HTTPException(status.HTTP_501_NOT_IMPLEMENTED, 'Server restart not implemented yet. Killed server.', headers={'kill_results': kill_results})
-    # TODO: modify get_webserver_pid in order to capture command(s) in order to allow to restart those?
-    # TODO: + also allow to specify command to run in post request
-    # restart_results = ...
-    # results = [r1 + r2 for r1, r2 in zip(kill_results, restart_results)]
-    # return {'': result['kill_confirmed'], 'restart_confirmed': True}
+# def restart_webserver(pids: List[int]) -> Dict[str, Any]:
+#     kill_results = kill_webservers(pids)
+#     raise HTTPException(status.HTTP_501_NOT_IMPLEMENTED, 'Server restart not implemented yet. Killed server.', headers={'kill_results': kill_results})
+#     # TODO: modify get_webserver_pid in order to capture command(s) in order to allow to restart those?
+#     # TODO: + also allow to specify command to run in post request
+#     # restart_results = ...
+#     # results = [r1 + r2 for r1, r2 in zip(kill_results, restart_results)]
+#     # return {'': result['kill_confirmed'], 'restart_confirmed': True}
 
 
 def define_api(app: FastAPI):
@@ -154,15 +145,15 @@ def define_api(app: FastAPI):
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_message)
 
     @app.post('/webservers/kill', response_model=conlist(KillResults))
-    def _kill_webserver(actions: conlist(ActionOnPorts, min_items=1)):
+    def _kill_webserver(ports_to_kill: conlist(Union[PositiveInt, PortRange], min_items=1)):
         results = list()
-        for action_on_ports in actions:
-            pids, lsof_cmd_result = get_webserver_pid(action_on_ports.ports)
+        for ports in ports_to_kill:
+            pids, lsof_cmd_result = get_webserver_pid(ports)
             if pids is not None:
-                tasks_results = kill_webservers(pids) if action_on_ports.action == 'KILL' else restart_webserver(pids)
+                tasks_results = kill_webservers(pids)
             else:
                 tasks_results, pids = dict(), list()
-            results.append(KillResults(action_on_ports=action_on_ports, cmd_results=tasks_results,
+            results.append(KillResults(ports=ports, cmd_results=tasks_results,
                                        pids_from_ports_cmd_result=lsof_cmd_result, pids=pids))
         return results
 
