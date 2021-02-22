@@ -6,14 +6,14 @@ export class LocalSettings {
   }
 }
 
-export function writeLocalSettings({ commit, state }) {
+export function writeLocalSettings({ dispatch, state }) {
   if (state.debug) console.log(`Writing local settings to "${state.localSettingsFilepath}"`);
 
   if (typeof state.settings === LocalSettings) {
     const strSettings = JSON.stringify(state.settings);
     fs.writeFile(state.localSettingsFilepath, strSettings, err => {
       if (err) {
-        commit("unexpectedError", `ERR: Failed to write local settings file: "${err.message}"`);
+        dispatch("showMessage", { type: "error", message: `ERR: Failed to write local settings file: "${err.message}"` });
       } else if (state.debug) console.log(`Local settings file "${state.localSettingsFilepath}" succesfully saved`);
     });
   }
@@ -38,7 +38,7 @@ export function loadLocalSettings({ commit, dispatch, state }) {
         writeLocalSettings({ commit: commit, state: state });
         commit("setLocalSettings", settings, updateScanInterval(settings));
       } else {
-        commit("unexpectedError", `ERR: Failed to read local settings file: "${err.message}"`);
+        dispatch("showMessage", { type: "error", message: `ERR: Failed to read local settings file: "${err.message}"` });
         return;
       }
     } else {

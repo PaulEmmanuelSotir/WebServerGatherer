@@ -4,32 +4,19 @@
       <v-col class="mb-4">
         <!-- TODO: Allow both form and config setting from code editor -->
         <v-form ref="settingsForm">
-          <v-expansion-panels
-            accordion
-            multiple
-            focusable
-            v-model="curr_panels"
-          >
+          <v-expansion-panels accordion multiple focusable v-model="curr_panels">
             <v-expansion-panel expand>
               <v-expansion-panel-header>
                 Front Settings
               </v-expansion-panel-header>
               <v-expansion-panel-content>
-                <v-checkbox
-                  v-model="settings.autoLocahostScan"
-                  label="Automatic localhost server scan"
-                />
-                <v-text-field
-                  v-model="settings.foo"
-                  :rules="rules.emailRules"
-                  type="text"
-                  label="foo"
-                />
+                <!-- <v-checkbox v-model="$store.state.settings.autoLocahostScan" label="Automatic localhost server scan" />
+                <v-text-field v-model="$store.state.settings.foo" :rules="rules.emailRules" type="text" label="foo" /> -->
                 <v-slider
-                  v-model="settings.scanRefreshRate"
-                  label="Auto scan refresh rate"
-                  max="100"
-                  min="1"
+                  v-model="$store.state.settings.scanEvery"
+                  label="Port scan every (ms)"
+                  min="100"
+                  max="10000"
                   thumb-label="always"
                 />
                 <!-- ... -->
@@ -122,17 +109,11 @@
 <script>
 function defineSettingsRules() {
   function maxStrSizeRule() {
-    return text =>
-      (text || "").length <= this.max ||
-      `A maximum of ${this.max} characters is allowed`;
+    return text => (text || "").length <= this.max || `A maximum of ${this.max} characters is allowed`;
   }
 
   const rules = {};
-  rules.emailRules = [
-    maxStrSizeRule(),
-    v => !!v || "E-mail is required",
-    v => /.+@.+\..+/.test(v) || "E-mail must be valid"
-  ];
+  rules.emailRules = [maxStrSizeRule(), v => !!v || "E-mail is required", v => /.+@.+\..+/.test(v) || "E-mail must be valid"];
   rules.nameRules = [maxStrSizeRule()];
   return rules;
 }
@@ -145,7 +126,7 @@ export default {
     curr_panels: [0, 1, 2]
   }),
   watch: {
-    settings: "validate"
+    //settings: "validate"
   },
   methods: {
     validate() {

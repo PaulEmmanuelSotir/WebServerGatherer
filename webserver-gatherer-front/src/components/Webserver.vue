@@ -1,10 +1,10 @@
 <template>
   <v-container id="webserverView" class="ma-0 pa-0 full-height-width">
     <div class="dashgray full-height-width">
+      <!-- Webview displaying webpage from server -->
       <webview
-        :id="`${server.baseURL}-webview`"
-        :src="server.currentURL"
-        :hidden="webview_hidden"
+        :ref="`${serverTab.id}-webview`"
+        :src="serverTab.currentURL"
         class="full-height-width"
         disablewebsecurity
         allowpopups
@@ -13,36 +13,33 @@
         @did-fail-load="onWebViewFailedLoading"
         @crashed="onWebViewCrashed"
       ></webview>
-      <v-overlay :value="server.loading" absolute>
-        <v-progress-circular
-          indeterminate
-          size="64"
-          color="primary"
-        ></v-progress-circular>
+
+      <!-- Loading progress from webview -->
+      <v-overlay :value="serverTab.webviewIsLoading" absolute>
+        <v-progress-circular indeterminate size="64" color="primary"></v-progress-circular>
       </v-overlay>
 
-      <v-overlay :value="server.failed" absolute>
+      <!-- WebServer webview error message (webview failed loading web page or crashed) -->
+      <v-overlay :value="serverTab.webviewError" absolute>
         <v-alert prominent type="error" elevation="4">
           <v-row align="center" class="grow">
-            <v-col class="grow" v-if="server.crashed">
-              {{ server.name }} Web-Server's webview crashed.
-              {{ server.errorInfo ? `Error: "${server.errorInfo}"` : "" }}
+            <v-col class="grow" v-if="serverTab.webviewCrashed">
+              <!--webview.isCrashed() -->
+              {{ serverTab.name }} Web-Server's webview crashed. <br />
+              {{ serverTab.webviewErrorInfo }}
             </v-col>
-            <v-col class="grow" v-if="server.failedLoading">
-              Failed to load {{ server.name }} Web-Server landing page.
-              {{ server.errorInfo ? `Error: "${server.errorInfo}"` : "" }}
+            <v-col class="grow" v-else>
+              Failed to load {{ serverTab.name }} Web-Server landing page. <br />
+              {{ serverTab.webviewErrorInfo }}
             </v-col>
             <v-col class="shrink">
-              <v-btn class="mb-2">Retry</v-btn>
+              <v-btn class="mb-2" @click="retry">Retry</v-btn>
               <v-tooltip bottom>
                 <template v-slot:activator="{ on, attrs }">
-                  <v-btn v-bind="attrs" v-on="on"
-                    >Ignore {{ server.port }} port</v-btn
-                  >
+                  <v-btn v-bind="attrs" v-on="on">Ignore {{ serverTab.server.port }} port</v-btn>
                 </template>
                 <span>
-                  Ignore any WebServer listening on port "{{ server.port }}" for
-                  this backend (can be changed in settings view)
+                  Ignore any WebServer listening on port "{{ serverTab.server.port }}" for this backend (can be undo in settings view)
                 </span>
               </v-tooltip>
             </v-col>
@@ -57,55 +54,42 @@
 export default {
   name: "webserver-view",
   props: {
-    server: {
+    serverTab: {
       type: Object,
-      required: true,
-      validator: function(server) {
-        // TODO: use javascript class prototypes instead?
-        if (
-          typeof server.port === "undefined" ||
-          typeof server.hostname === "undefined"
-        ) {
-          return false;
-        }
-        return true;
-      }
+      required: true
     }
   },
 
-  data: () => ({
-    cant_render_webview: false,
-    webview_error: null,
-    webview_hidden: false
-  }),
+  data: () => ({}),
 
-  errorCaptured: function(err, component, info) {
-    console.log(`ERR: "${component}" component error: "${err}"; info: ${info}`);
-    return true; // Error should be propagating further
-  },
+  computed: {},
 
   methods: {
-    onWebViewFailedLoading: function() {
-      console.log("WebView Failed loading!");
-      this.webview_error = true;
-      this.server.failedLoading = true;
-      this.server.loading = false;
+    onWebViewFailedLoading: function(errorCode, errorDescription, validatedURL) {
+      this.serverTab.webviewError = true;
+      this.serverTab.webviewErrorInfo = `Error: Failed to load webpage from webview: "${errorDescription}"; error-code="${errorCode}"; validatedURL="${validatedURL}"`;
+      this.serverTab.webviewIsLoading = true;
     },
     onWebViewCrashed: function() {
-      console.log("WebView Crashed!");
-      this.webview_error = true;
-      this.server.crashed = true;
-      this.server.loading = false;
+      this.serverTab.webviewError = true;
+      this.serverTab.webviewErrorInfo = "";
+      this.serverTab.webviewCrashed = true;
+      this.serverTab.webviewIsLoading = false;
     },
     onWebViewStartLoading: function() {
-      console.log("WebView Started loading...");
-      this.server.loading = true;
-      // TODO: check whether iframe succefully displayed web server UI
+      this.serverTab.webviewIsLoading = true;
     },
     onWebViewStopLoading: function(e) {
-      console.log(`WebView Stoped loading (error: "${e}")!`);
-      this.server.loading = false;
-      // TODO: test/compare??
+      console.log(`WebView Stoped loading (e="${JSON.stringify(e)}")!`);
+      this.serverTab.webviewIsLoading = false;
+      // TODO: check whether webserver succefully displayed web server UI?
+    },
+    retry: function() {
+      this.serverTab.webviewError = false;
+      this.serverTab.webviewErrorInfo = null;
+      this.serverTab.webviewCrashed = false;
+      this.serverTab.webviewIsLoading = true;
+      this.$refs[`${this.serverTab.id}-webview`].reload();
     }
   }
 };

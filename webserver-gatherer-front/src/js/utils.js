@@ -6,3 +6,17 @@ export function notNullNorUndefined(val, type = null) {
   const type_check = type !== null ? typeof val === type : true;
   return typeof val !== "undefined" && val !== null && type_check;
 }
+
+export class IDGenerator {
+  constructor(init = 0) {
+    this.currentId = init;
+  }
+
+  getNewId() {
+    return `${process.pid}-${this.currentId++}`;
+  }
+
+  reset() {
+    this.currentId = 0;
+  }
+}

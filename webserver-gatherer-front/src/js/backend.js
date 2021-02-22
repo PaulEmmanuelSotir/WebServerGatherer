@@ -1,9 +1,18 @@
 export default class Backend {
-  constructor(name, hostname, sshcreds = null, sshopts = {}) {
-    this.name = name;
+  constructor(hostname, displayName = null, sshcreds = null, sshopts = {}) {
+    this.displayName = displayName;
     this.hostname = hostname;
     this.sshcreds = sshcreds;
     this.sshopts = sshopts;
+  }
+
+  get name() {
+    if (this.displayName) return this.displayName;
+    return this.is_localhost ? "localhost" : this.hostname;
+  }
+
+  get is_localhost() {
+    return this.hostname === "localhost" || this.hostname === "127.0.0.1";
   }
 
   static CONSTANTS = {
@@ -14,8 +23,4 @@ export default class Backend {
     backend_scan_endpoint: "/webservers/scan",
     backend_kill_endpoint: "/webservers/kill"
   };
-
-  get is_localhost() {
-    return this.hostname === "localhost" || this.hostname === "127.0.0.1";
-  }
 }
