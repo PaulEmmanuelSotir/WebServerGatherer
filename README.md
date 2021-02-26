@@ -48,15 +48,17 @@ _**legend**: ♻ = WIP; 💤: TODO; 💥 = IMPORTANT; 👍 = DONE (doesn't lists
 - 👍 Implement config (get/set) backend API
 - 👍 Implement electron front app webserver views (using electron's 'WebView')
 - 👍 Implement regular calls to backend API from front to update webservers with port scan (nmap)
-- ♻ Implement webserver start/restart backend API
-- ♻ Implement console view allowing to run a terminal on remote server(s) or localhost fron front app (using xterm)
-- ♻ Local/Front settings view
-- ♻ Implement call to backend API from front to kill webserver
+- 👍 Implement call to backend API from front to kill webserver
+- ♻ Fix navigation drawer buttons
+- ♻ Implement backend API calls Mutex (forbid multiple calls from the same front instance at once) and record mean response delay for webservers/scans
+- ♻ Gather webservers and backend settings view by remote server to which their repective backend API belongs to
 - ♻ Allow webservers webview browsing without openning a new BrowserWindow (e.g. Jupyter notebook shouldn't open a new BrowserWindow when openning a notebook) + show webserver URL on app bar
 - ♻ Rename all remaning occurences of "Dashboard Gatherer" into "WebServer Gatherer"
 - ♻ Allow user to ignore some port(s) or webserver service name(s) from backend settings view or directly from a webserver view
-- 💤 Gather webservers and backend settings view by remote server to which their repective backend API belongs to
-- 💤 Implement needed checks and error handling to ensure a webserver discovered by backend API ports scanning is actually returning a valid webpage (backend API only scans for any open TCP ports)
+- ♻ Implement needed checks and error handling to ensure a webserver discovered by backend API ports scanning is actually returning a valid webpage (backend API only scans for any open TCP ports)
+- ♻ Local/Front settings view
+- ♻ Implement webserver start backend API (runs pre-registered commands)
+- ♻ Implement console view allowing to run a terminal on remote server(s) or localhost from front app (using xterm)
 - 💤 Implement webservers tile view in front app
 - 💤 Implement remote server SSH connection setup and secure SSH credentials storage with 2FA and/or allow to connect to an existing SSH agent  
 - 💤 Implement automatic Python backend API deployement throught SSH tunnel to configured remote server(s)
