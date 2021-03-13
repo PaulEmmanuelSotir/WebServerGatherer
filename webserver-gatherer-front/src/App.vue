@@ -4,21 +4,23 @@
       <v-container class="d-flex align-center" style="width: 100%">
         <!-- TODO: Add support for URL arddress text box, "Add to backend server profiles" button, "Ignore this port on ... bakend" button, and "Duplicate tab (creates a new profile which browses to current URL)"  -->
         <v-app-bar-nav-icon @click="$store.state.drawer = !$store.state.drawer" class="flex-shrink-1 flex-grow-0"></v-app-bar-nav-icon>
-        <div class="d-flex align-center flex-grow-1 flex-shrink-1" v-if="currentComponent !== null">
-          <v-icon class="flex-shrink-1 flex-grow-0 ma-1" v-if="!currentComponentIsServer">{{ currentComponent.icon }}</v-icon>
-          <v-toolbar-title class="flex-shrink-1 flex-grow-0" v-if="!currentComponentIsServer || currentComponent.latestPageTitle">{{
-            currentComponent.name
-          }}</v-toolbar-title>
+        <div class="d-flex align-center flex-grow-1 flex-shrink-1" v-if="$store.state.currentComponent !== null">
+          <v-icon class="flex-shrink-1 flex-grow-0 ma-1" v-if="!currentComponentIsServer">{{ $store.state.currentComponent.icon }}</v-icon>
+          <v-toolbar-title
+            class="flex-shrink-1 flex-grow-0"
+            v-if="!currentComponentIsServer || $store.state.currentComponent.latestPageTitle"
+            >{{ $store.state.currentComponent.name }}</v-toolbar-title
+          >
           <v-text-field
             class="flex-grow-1 flex-shrink-1 ml-4 mr-4 mt-7 centered-input"
             type="text"
-            :prepend-inner-icon="currentComponent.icon"
+            :prepend-inner-icon="$store.state.currentComponent.icon"
             clearable
             single-line
             solo-inverted
             rounded
             dense
-            :value="currentComponent.currentURL"
+            :value="$store.state.currentComponent.currentURL"
             v-if="currentComponentIsServer"
           >
             <template v-slot:progress>
@@ -41,19 +43,19 @@
               </v-btn>
             </template>
             <span>
-              Ignore any WebServer listening on "{{ currentComponent.server.port }}" port for "{{ currentComponent.server.hostname }}"
-              backend (can be changed in settings view)
+              Ignore any WebServer listening on "{{ $store.state.currentComponent.server.port }}" port for "{{
+                $store.state.currentComponent.server.hostname
+              }}" backend (can be changed in settings view)
             </span>
           </v-tooltip>
           <!-- Kill button -->
-          <v-tooltip bottom class="flex-shrink-1 flex-grow-0" v-if="currentComponentIsServer && $store.state.snackbarErrorMessage === null">
+          <v-tooltip bottom class="flex-shrink-1 flex-grow-0" v-if="currentComponentIsServer">
             <template v-slot:activator="{ on, attrs }">
-              <v-btn text v-bind="attrs" v-on="on" v-on:click="killWebserver(currentComponent.server)">
-                <!-- TODO: Choose between mdi-close, mdi-cloud-outline-off and mdi-server-remove icon -->
-                <v-icon> mdi-cloud-outline-off</v-icon>
+              <v-btn text v-bind="attrs" v-on="on" v-on:click="killWebserver($store.state.currentComponent.server)">
+                <v-icon> mdi-close </v-icon>
               </v-btn>
             </template>
-            <span> Kill WebServer process listening on "{{ currentComponent.server.port }}" port </span>
+            <span> Kill WebServer process listening on "{{ $store.state.currentComponent.server.port }}" port </span>
           </v-tooltip>
         </div>
       </v-container>
@@ -67,17 +69,25 @@
             {{ $store.state.title }}
           </v-list-item-title>
           <v-list-item-subtitle class="mb-2"> {{ subtitle }} </v-list-item-subtitle>
-          <v-btn
+          <v-btn-toggle borderless group class="d-flex flex-column" v-model="selectedView">
+            <v-btn
+              text
+              class="justify-start pb-0 pt-0 pr-4 pl-4"
+              v-for="otherView in $store.state.otherGlobalViews"
+              :key="otherView.name"
+              :value="otherView.name"
+            >
+              <v-icon left> {{ otherView.icon }} </v-icon>
+              <span class="font-weight-regular"> {{ otherView.name }} </span>
+            </v-btn>
+          </v-btn-toggle>
+          <!-- <v-btn
             text
             v-for="otherView in $store.state.otherGlobalViews"
             :key="otherView.name"
-            @click="$store.state.currentOtherViewName = otherView.name"
-            class="justify-start"
+            @click="$store.state.currentComponent = otherView.name"
           >
-            <!-- class="align-" -->
-            <v-icon left> {{ otherView.icon }} </v-icon>
-            <span class="font-weight-regular"> {{ otherView.name }} </span>
-          </v-btn>
+          </v-btn> -->
         </v-list-item-content>
       </v-list-item>
 
@@ -87,7 +97,7 @@
         <v-divider></v-divider>
         <v-spacer></v-spacer>
         <v-subheader> Localhost </v-subheader>
-        <v-list-item-group mandatory v-model="$store.state.currentWebserverTabId">
+        <v-list-item-group v-model="selectedView">
           <v-list-item v-for="serverTab in $store.state.webserverTabs" :key="serverTab.id" :value="serverTab.id" link>
             <v-list-item-icon>
               <v-icon>{{ serverTab.icon }}</v-icon>
@@ -105,19 +115,17 @@
           </v-list-item>
         </v-list-item-group>
 
-        <v-divider v-if="$store.state.webserverTabs.length > 0"></v-divider>
-
         <!-- Servers tiles/grid, console, ... and settings views -->
-        <v-btn-toggle borderless>
-          <v-tooltip v-for="otherView in $store.state.otherBackendViews" :key="otherView.name" bottom>
-            <template>
-              <v-btn @click="$store.state.currentOtherViewName = otherView.name">
-                <span> {{ otherView.name }} </span>
-                <v-icon right> {{ otherView.icon }} </v-icon>
-              </v-btn>
-            </template>
-            <span> {{ otherView.name }}: {{ otherView.description }} </span>
-          </v-tooltip>
+        <v-btn-toggle borderless group class="d-flex justify-center" v-model="selectedView">
+          <v-btn text v-for="otherView in $store.state.otherBackendViews" :key="otherView.name" :value="otherView.name">
+            <!-- <v-tooltip bottom>
+              <template> -->
+            <v-icon left> {{ otherView.icon }} </v-icon>
+            <span class="font-weight-regular"> {{ otherView.name }} </span>
+            <!-- </template> -->
+            <!-- <span> {{ otherView.name }}: {{ otherView.description }} </span> -->
+            <!-- </v-tooltip> -->
+          </v-btn>
         </v-btn-toggle>
         <!-- <v-list-item v-for="otherView in $store.state.otherViews" :key="otherView.name" link>
             <v-list-item-icon>
@@ -163,13 +171,7 @@
 
       <!-- Web-Server webview or other view component (settings/tile-view/console/etc) -->
       <v-container fill-height class="ma-0 pa-0">
-        <v-tabs-items
-          v-if="currentComponentIsServer"
-          v-model="$store.state.currentWebserverTabId"
-          continuous
-          mandatory
-          class="full-height-width"
-        >
+        <v-tabs-items v-if="currentComponentIsServer" v-model="selectedView" continuous class="full-height-width">
           <v-tab-item class="full-height-width" v-for="serverTab in $store.state.webserverTabs" :key="serverTab.id" :value="serverTab.id">
             <v-lazy class="full-height-width">
               <keep-alive class="full-height-width">
@@ -179,7 +181,7 @@
           </v-tab-item>
         </v-tabs-items>
 
-        <v-tabs-items v-else v-model="$store.state.currentOtherViewName" continuous mandatory class="full-height-width">
+        <v-tabs-items v-else v-model="selectedView" continuous class="full-height-width">
           <v-tab-item
             class="full-height-width"
             v-for="otherView in [...$store.state.otherGlobalViews, ...$store.state.otherBackendViews]"
@@ -206,6 +208,7 @@ import WebserverView from "@/components/Webserver.vue";
 import Settings from "@/components/Settings.vue";
 import Console from "@/components/Console.vue";
 import Editor from "@/components/Editor.vue";
+import { notNullNorUndefined } from "@/js/utils";
 
 export default {
   name: "webserver-gatherer",
@@ -218,8 +221,33 @@ export default {
     editor: Editor
   },
 
+  data: () => ({
+    selectedView: "Server tiles view"
+  }),
+
+  watch: {
+    selectedView: function(oldVal, newVal) {
+      console.log(`Switched to ${JSON.stringify(newVal)}`);
+
+      // Determine which view is currently selected
+      const state = this.$store.state;
+      let curr = null;
+      if (notNullNorUndefined(newVal)) {
+        curr = state.webserverTabs.find(tab => tab.id === newVal);
+        if (!notNullNorUndefined(curr)) {
+          curr = state.otherGlobalViews.find(view => view.name === newVal);
+          if (!notNullNorUndefined(curr)) curr = state.otherBackendViews.find(view => view.name === newVal);
+        }
+      }
+      // If could't find current view, set to default one
+      if (!notNullNorUndefined(curr)) curr = this.$store.state.globalViews[0];
+
+      this.$store.commit("changeCurrentComponent", curr);
+    }
+  },
+
   computed: {
-    ...mapGetters(["config", "webserverProgress", "subtitle", "currentComponentIsServer", "currentComponent"])
+    ...mapGetters(["config", "webserverProgress", "subtitle", "currentComponentIsServer"])
   },
 
   methods: { ...mapActions(["scanWebservers", "loadLocalSettings", "writeLocalSettings", "killWebserver", "showMessage"]) },

@@ -36,7 +36,7 @@ export class WebServerTab {
   }
 
   get name() {
-    return this.latestPageTitle ? this.latestPageTitle : `"${this.server.baseURL}"`;
+    return this.latestPageTitle ? this.latestPageTitle : this.server.baseURL;
   }
 
   get currentURL() {

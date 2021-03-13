@@ -52,13 +52,15 @@ _**legend**: ♻ = WIP; 💤: TODO; 💥 = IMPORTANT; 👍 = DONE (doesn't lists
 - ♻ Fix navigation drawer buttons
 - ♻ Implement backend API calls Mutex (forbid multiple calls from the same front instance at once) and record mean response delay for webservers/scans
 - ♻ Gather webservers and backend settings view by remote server to which their repective backend API belongs to
-- ♻ Allow webservers webview browsing without openning a new BrowserWindow (e.g. Jupyter notebook shouldn't open a new BrowserWindow when openning a notebook) + show webserver URL on app bar
+- ♻ Better URL textfield allowing to browse to any URL within webserver domain and binded to webview's current URL + retrun actual webserver loading progress in "webserverProgress" getter
+- ♻ Allow webservers webview browsing without openning a new BrowserWindow (e.g. Jupyter notebook shouldn't open a new BrowserWindow when openning a notebook)
 - ♻ Rename all remaning occurences of "Dashboard Gatherer" into "WebServer Gatherer"
 - ♻ Allow user to ignore some port(s) or webserver service name(s) from backend settings view or directly from a webserver view
 - ♻ Implement needed checks and error handling to ensure a webserver discovered by backend API ports scanning is actually returning a valid webpage (backend API only scans for any open TCP ports)
 - ♻ Local/Front settings view
 - ♻ Implement webserver start backend API (runs pre-registered commands)
 - ♻ Implement console view allowing to run a terminal on remote server(s) or localhost from front app (using xterm)
+- 💤 Fix retry button on webview error
 - 💤 Implement webservers tile view in front app
 - 💤 Implement remote server SSH connection setup and secure SSH credentials storage with 2FA and/or allow to connect to an existing SSH agent  
 - 💤 Implement automatic Python backend API deployement throught SSH tunnel to configured remote server(s)

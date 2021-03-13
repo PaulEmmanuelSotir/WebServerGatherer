@@ -9,31 +9,31 @@ import { IDGenerator } from "@/js/utils";
 
 Vue.use(Vuex);
 const WebserverTabIDGen = new IDGenerator();
+const globalViews = [
+  {
+    name: "Server tiles view",
+    icon: "mdi-view-compact",
+    component: "servers-tile-view",
+    description: "WebServers tile view displaying all listening webservers at once"
+  },
+  { name: "Settings", icon: "mdi-settings", component: "settings" }
+];
 
 const state = {
   debug: process.env.NODE_ENV !== "production",
   availableBackends: [new Backend("127.0.0.1")],
   drawer: null,
   snackbarErrorMessage: "",
-  currentWebserverTabId: null,
-  currentOtherViewName: null,
+  currentComponent: globalViews[0],
   title: "Web-Server Gatherer",
   version: "0.0.1",
   author: "PaulEmmanuel SOTIR",
   github: "https://github.com/PaulEmmanuelSotir/DashboardWebUIGatherer",
-  webserverTabs: [],
   localSettingsFilepath: "settings.json",
   settings: null,
   scanInterval: null,
-  otherGlobalViews: [
-    { name: "Settings", icon: "mdi-settings", component: "settings" },
-    {
-      name: "Server tiles view",
-      icon: "mdi-view-compact",
-      component: "servers-tile-view",
-      description: "WebServers tile view displaying all listening webservers at once"
-    }
-  ],
+  webserverTabs: [],
+  otherGlobalViews: globalViews,
   otherBackendViews: [
     { name: "Console", icon: "mdi-console", component: "console", description: "backend terminal prompt throught SSH tunnel" },
     { name: "Editor", icon: "mdi-code-braces", component: "editor", description: "code editor for easier script running on backend" }
@@ -43,10 +43,6 @@ const state = {
 // Mutations are operations that actually mutate the state. each mutation handler gets the entire state tree as the first argument,
 // followed by additional payload arguments. mutations must be synchronous and can be recorded by plugins for debugging purposes.
 const mutations = {
-  changeBackend(state, newBackend) {
-    state.severs = []; // Empty servers list as we are changing current backend
-    state.bakcend = newBackend;
-  },
   updateServers(state, newWebservers) {
     // Find matching server(s) between scanned 'newWebservers' and current/displayed server tabs and create new tabs array
     const NewServerTabs = [];
@@ -65,17 +61,15 @@ const mutations = {
       }
     }
 
-    if (state.currentComponentIsServer) {
+    if (typeof state.currentComponent.id !== "undefined") {
       // Update Current (Displayed/Selected webserver tab) to a another one if it have been removed (no longer among scanned servers)
-      if (!NewServerTabs.some(tab => state.currentWebserverTabId === tab.id)) {
-        state.currentWebserverTabId = null;
+      if (!NewServerTabs.some(tab => state.currentComponent.id === tab.id)) {
         if (NewServerTabs.length > 0) {
-          state.currentWebserverTabId = NewServerTabs[0].id;
-          state.currentOtherViewName = null;
+          state.currentComponent = NewServerTabs[0];
         } else if (state.availableBackends.lenght > 0) {
-          state.currentOtherViewName = state.otherGlobalViews.tiles.name;
+          state.currentComponent = state.otherGlobalViews[0]; // Tiles
         } else {
-          state.currentOtherViewName = state.otherGlobalViews.settings.name;
+          state.currentComponent = state.otherGlobalViews[1]; // Settings
         }
       }
     }
@@ -105,6 +99,9 @@ const mutations = {
   setLocalSettings(state, newSettings, scanInterval = null) {
     state.settings = newSettings;
     state.scanInterval = scanInterval;
+  },
+  changeCurrentComponent(state, currentView) {
+    state.currentComponent = currentView;
   }
 };
 
@@ -138,15 +135,6 @@ const actions = {
 
 // Function which may be appended to vue's 'computed' properties
 const getters = {
-  config: () => {
-    // const defaults = {}
-
-    // return new Promise(resolve => {
-    //   const conf = {}
-    //   return resolve(conf)
-    // })
-    return {};
-  },
   webserverProgress: () => {
     // TODO: return download progress from webview...
     return 33; //(new Date().getSeconds() * 2) / 120;
@@ -157,24 +145,21 @@ const getters = {
       : `${state.servers.length} listening web-server found`;
   },
   currentComponentIsServer: state => {
-    return state.currentWebserverTabId !== null;
-  },
-  currentComponent: state => {
-    let curr = null;
-    if (state.currentWebserverTabId !== null) {
-      curr = state.webserverTabs.find(tab => tab.id === state.currentWebserverTabId);
-    } else if (state.currentOtherViewName !== null) {
-      curr = state.otherGlobalViews.find(view => state.currentOtherViewName === view.name);
-      if (typeof curr === "undefined" || curr === null)
-        curr = state.otherBackendViews.find(view => state.currentOtherViewName === view.name);
-    }
-    if (typeof curr !== "undefined" && curr !== null) {
-      return curr;
-    }
-    console.log(`Error: Couldn't identify current view from 'state.currentOtherViewName=${state.currentOtherViewName}',
-                 'state.currentWebserverTabId=${state.currentWebserverTabId}'`);
-    return null;
+    return typeof state.currentComponent.id !== "undefined";
   }
+  // currentComponent: state => {
+  //   let curr = state.webserverTabs.find(tab => tab.id === state.currentView);
+  //   if (typeof curr !== "undefined" && curr !== null) {
+  //     curr = state.otherGlobalViews.find(view => state.currentOtherViewName === view.name);
+  //     if (typeof curr === "undefined" || curr === null)
+  //       curr = state.otherBackendViews.find(view => state.currentOtherViewName === view.name);
+  //   }
+
+  //   if (typeof curr !== "undefined" && curr !== null) return curr;
+  //   console.log(`Error: Couldn't identify current view from 'state.currentOtherViewName=${state.currentOtherViewName}',
+  //                'state.currentView=${state.currentView}'`);
+  //   return null;
+  // }
 };
 
 // A Vuex instance is created by combining the state, mutations, actions, and getters.
