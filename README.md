@@ -50,6 +50,7 @@ _**legend**: ♻ = WIP; 💤: TODO; 💥 = IMPORTANT; 👍 = DONE (doesn't lists
 - 👍 Implement regular calls to backend API from front to update webservers with port scan (nmap)
 - 👍 Implement call to backend API from front to kill webserver
 - ♻ Fix navigation drawer buttons
+- ♻ Make sure to install NMAP during backend deployement along with conda and conda environement deps (if still needed by ports scan implementation) 
 - ♻ Implement backend API calls Mutex (forbid multiple calls from the same front instance at once) and record mean response delay for webservers/scans
 - ♻ Gather webservers and backend settings view by remote server to which their repective backend API belongs to
 - ♻ Better URL textfield allowing to browse to any URL within webserver domain and binded to webview's current URL + retrun actual webserver loading progress in "webserverProgress" getter
