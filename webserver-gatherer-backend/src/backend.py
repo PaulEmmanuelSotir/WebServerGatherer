@@ -4,6 +4,7 @@
 As this is a very simple web app, backend is mostly usefull for backend tasks where python is needed or prefered like running mlflow tracking server if needed, running a jupyter notebook or tensorboard server on demand, etc...
 """
 import click
+import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import ORJSONResponse
 
@@ -25,3 +26,6 @@ def read_root():
 webserver_endpoints = webservers.define_api(app)
 config_endoints = config.define_api(app)
 # console_endpoints = console.define_    api(app)
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8546)

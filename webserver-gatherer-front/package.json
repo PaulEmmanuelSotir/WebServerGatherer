@@ -5,7 +5,7 @@
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
-    "dev": "webpack --watch --progress",
+    "dev": "webpack --progress --mode development",
     "start": "electron .",
     "lint": "vue-cli-service lint",
     "electron:build": "vue-cli-service electron:build",

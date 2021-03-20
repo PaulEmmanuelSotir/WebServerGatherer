@@ -52,10 +52,8 @@ class ConfigEditPolicy(str, Enum):
 
 def write_config(config: Config, config_path: Path):
     try:
-        with open(config_path, 'r+') as file:
-            file.seek(0)
+        with open(config_path, 'w') as file:
             file.write(config.json())
-            file.truncate()
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT,
                             detail=f"Couldnt write new JSON config due to invalid JSON or failure to open/modify current configuration file ('{config_path}').\nException raised: '{str(e)}'")
