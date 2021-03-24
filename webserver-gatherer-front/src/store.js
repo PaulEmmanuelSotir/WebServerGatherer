@@ -139,11 +139,6 @@ const getters = {
     // TODO: return download progress from webview...
     return 33; //(new Date().getSeconds() * 2) / 120;
   },
-  subtitle: state => {
-    return !Array.isArray(state.servers) || state.servers.length === 0
-      ? "No listening server found"
-      : `${state.servers.length} listening web-server found`;
-  },
   currentComponentIsServer: state => {
     return typeof state.currentComponent.id !== "undefined";
   }

@@ -61,84 +61,114 @@
       </v-container>
     </v-app-bar>
 
-    <v-navigation-drawer class="deep-blue accent-4" v-model="$store.state.drawer" app dark>
-      <!-- App title and status subtitle -->
-      <v-list-item elevation="4">
-        <v-list-item-content>
-          <v-list-item-title class="title">
-            {{ $store.state.title }}
-          </v-list-item-title>
-          <v-list-item-subtitle class="mb-2"> {{ subtitle }} </v-list-item-subtitle>
-          <v-btn-toggle borderless group class="d-flex flex-column" v-model="selectedView">
-            <v-btn
-              text
-              class="justify-start pb-0 pt-0 pr-4 pl-4"
-              v-for="otherView in $store.state.otherGlobalViews"
-              :key="otherView.name"
-              :value="otherView.name"
-            >
-              <v-icon left> {{ otherView.icon }} </v-icon>
-              <span class="font-weight-regular"> {{ otherView.name }} </span>
-            </v-btn>
-          </v-btn-toggle>
-          <!-- <v-btn
-            text
+    <v-navigation-drawer v-model="$store.state.drawer" dark app>
+      <v-list dense class=" pb-0">
+        <!-- App title -->
+        <v-container>
+          <span class="text-uppercase text-h6"> {{ $store.state.title }}</span>
+        </v-container>
+
+        <!-- WebServer Tiles and Settings global views -->
+        <v-btn-toggle borderless group class="mb-0 d-flex flex-column" v-model="selectedView">
+          <v-btn
+            class="justify-start ma-0 pr-4 pl-4"
             v-for="otherView in $store.state.otherGlobalViews"
             :key="otherView.name"
-            @click="$store.state.currentComponent = otherView.name"
+            :value="otherView.name"
           >
-          </v-btn> -->
-        </v-list-item-content>
-      </v-list-item>
-
-      <!-- Listening web servers -->
-      <v-list dense nav>
-        <!-- TODO: Change color of each servers wit it respective main color from its webview and display a preview tumbail on over -->
-        <v-divider></v-divider>
-        <v-spacer></v-spacer>
-        <v-subheader> Localhost </v-subheader>
-        <v-list-item-group v-model="selectedView">
-          <v-list-item v-for="serverTab in $store.state.webserverTabs" :key="serverTab.id" :value="serverTab.id" link>
-            <v-list-item-icon>
-              <v-icon>{{ serverTab.icon }}</v-icon>
-            </v-list-item-icon>
-
-            <v-list-item-content>
-              <v-list-item-title>
-                {{ serverTab.name }}
-              </v-list-item-title>
-              <v-list-item-subtitle v-if="serverTab.latestPageTitle">
-                <!-- I.e., if serverTab.name is other than url (name from serverTab.latestPageTitle) -->
-                {{ serverTab.server.baseURL }}
-              </v-list-item-subtitle>
-            </v-list-item-content>
-          </v-list-item>
-        </v-list-item-group>
-
-        <!-- Servers tiles/grid, console, ... and settings views -->
-        <v-btn-toggle borderless group class="d-flex justify-center" v-model="selectedView">
-          <v-btn text v-for="otherView in $store.state.otherBackendViews" :key="otherView.name" :value="otherView.name">
-            <!-- <v-tooltip bottom>
-              <template> -->
             <v-icon left> {{ otherView.icon }} </v-icon>
             <span class="font-weight-regular"> {{ otherView.name }} </span>
-            <!-- </template> -->
-            <!-- <span> {{ otherView.name }}: {{ otherView.description }} </span> -->
-            <!-- </v-tooltip> -->
           </v-btn>
         </v-btn-toggle>
-        <!-- <v-list-item v-for="otherView in $store.state.otherViews" :key="otherView.name" link>
-            <v-list-item-icon>
-              <v-icon> {{ otherView.icon }} </v-icon>
-            </v-list-item-icon>
-            <v-list-item-content>
-              <v-list-item-title>{{ otherView.name }}</v-list-item-title>
-            </v-list-item-content>
-          </v-list-item> -->
+      </v-list>
 
-        <v-divider></v-divider>
-        <v-spacer></v-spacer>
-        <v-subheader> Remote Backend #1 </v-subheader>
+      <!-- Listening web servers for each backends -->
+      <v-list dense class="pt-0">
+        <!-- TODO: Change color of each servers with it respective main color from its webview and display a preview tumbail on over -->
+
+        <v-list>
+          <v-divider></v-divider>
+          <v-list class="pt-0">
+            <!-- Backend title -->
+            <v-list-item class="mb-0 pb-0">
+              <v-list-item-content>
+                <v-list-item-title class="mb-0 pb-0">
+                  <v-badge
+                    :content="$store.state.webserverTabs.length"
+                    :value="$store.state.webserverTabs.length"
+                    color="blue"
+                    right
+                    inline
+                    class="mt-0 mb-0"
+                  >
+                    <span class="text-overline font-weight-bold">Localhost</span>
+                  </v-badge>
+                </v-list-item-title>
+                <v-list-item-subtitle class="text-wrap font-weight-light mb-0 pb-0">
+                  <span v-if="!$store.state.webserverTabs.length <= 0">
+                    <strong>{{ $store.state.webserverTabs.length }} </strong> listening web-servers found
+                  </span>
+                  <v-alert v-else dense type="warning" outlined class="pt-2 pb-2 pl-2 pr-0">
+                    <!-- TODO: replace "localhost" with current backend binding -->
+                    <!-- TODO: if not localhost, also report about remote backend connection success(badge? if no server + precision in this warning message) or failure (error message) -->
+                    No listening web-server have been found on "localhost" backend
+                  </v-alert>
+                </v-list-item-subtitle>
+              </v-list-item-content>
+            </v-list-item>
+
+            <!-- Backend webservers list -->
+            <v-list-item-group v-model="selectedView" v-if="$store.state.webserverTabs.length > 0">
+              <v-list-item v-for="serverTab in $store.state.webserverTabs" :key="serverTab.id" :value="serverTab.id" link>
+                <v-list-item-icon>
+                  <v-icon>{{ serverTab.icon }}</v-icon>
+                </v-list-item-icon>
+
+                <v-list-item-content>
+                  <v-list-item-title>
+                    {{ serverTab.name }}
+                  </v-list-item-title>
+                  <v-list-item-subtitle v-if="serverTab.latestPageTitle">
+                    <!-- I.e., if serverTab.name is other than url (name from serverTab.latestPageTitle) -->
+                    {{ serverTab.server.baseURL }}
+                  </v-list-item-subtitle>
+                </v-list-item-content>
+              </v-list-item>
+            </v-list-item-group>
+
+            <!-- Console/Editor buttons (backend-wide views) -->
+            <v-btn-toggle borderless group class="d-flex justify-center" v-model="selectedView">
+              <v-btn v-for="otherView in $store.state.otherBackendViews" :key="otherView.name" :value="otherView.name">
+                <!-- <v-tooltip bottom>
+                  <template> -->
+                <v-icon left> {{ otherView.icon }} </v-icon>
+                <span class="font-weight-regular"> {{ otherView.name }} </span>
+                <!-- </template> -->
+                <!-- <span> {{ otherView.name }}: {{ otherView.description }} </span> -->
+                <!-- </v-tooltip> -->
+              </v-btn>
+            </v-btn-toggle>
+          </v-list>
+
+          <v-divider></v-divider>
+
+          <!-- TODO: replace it with template looping over backends -->
+          <v-list class="pt-0">
+            <!-- Backend title -->
+            <v-list-item>
+              <v-list-item-content>
+                <v-list-item-title class="text-overline font-weight-bold white--text">
+                  Remote Backend #1
+                </v-list-item-title>
+                <v-list-item-subtitle class="text-wrap font-weight-light">
+                  <v-alert type="warning" outlined class="pt-2 pb-2 pl-2 pr-0 mt-2">
+                    No listening web-server have been found on "Remote Backend #1" backend
+                  </v-alert>
+                </v-list-item-subtitle>
+              </v-list-item-content>
+            </v-list-item>
+          </v-list>
+        </v-list>
 
         <v-divider></v-divider>
 
@@ -146,8 +176,7 @@
           <v-list-item-content>
             <v-btn :href="$store.state.github" target="_blank">
               <v-icon>mdi-git</v-icon>
-              <v-spacer></v-spacer>
-              <span class="mr-2">Project Github</span>
+              <span class="ml-2">Project Github</span>
             </v-btn>
           </v-list-item-content>
         </v-list-item>
@@ -226,8 +255,8 @@ export default {
   }),
 
   watch: {
-    selectedView: function(oldVal, newVal) {
-      console.log(`Switched to ${JSON.stringify(newVal)}`);
+    selectedView: function(newVal, oldVal) {
+      console.log(`Switched from "${oldVal}" to "${newVal}"`);
 
       // Determine which view is currently selected
       const state = this.$store.state;
@@ -247,10 +276,10 @@ export default {
   },
 
   computed: {
-    ...mapGetters(["config", "webserverProgress", "subtitle", "currentComponentIsServer"])
+    ...mapGetters(["config", "webserverProgress", "currentComponentIsServer"])
   },
 
-  methods: { ...mapActions(["scanWebservers", "loadLocalSettings", "writeLocalSettings", "killWebserver", "showMessage"]) },
+  methods: { ...mapActions(["scanWebservers", "loadLocalSettings", "updateLocalSettings", "killWebserver", "showMessage"]) },
 
   created: function() {
     console.log("!created!");
@@ -276,5 +305,10 @@ export default {
 }
 .centered-input >>> input {
   text-align: center;
+}
+#app {
+  font-family: Roboto, Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 </style>
