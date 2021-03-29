@@ -16,6 +16,11 @@ export function cloneObj(source) {
   return Object.assign(Object.create(Object.getPrototypeOf(source)), source);
 }
 
+export const messageTypes = {
+  ERROR: "error",
+  SUCCESS: "success"
+};
+
 export class IDGenerator {
   constructor(init = 0) {
     this.currentId = init;
@@ -25,7 +30,7 @@ export class IDGenerator {
     return `${process.pid}-${this.currentId++}`;
   }
 
-  reset() {
-    this.currentId = 0;
+  reset(init = 0) {
+    this.currentId = init;
   }
 }

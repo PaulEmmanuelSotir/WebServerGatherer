@@ -33,5 +33,3 @@ dependencies:
   - pip:
     - nni
     - python3-nmap
-    - aiofile # Async file operations wit asyncio
-  

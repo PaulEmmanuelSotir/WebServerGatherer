@@ -2,7 +2,7 @@
   <v-app>
     <v-app-bar color="primary" dark app>
       <v-container class="d-flex align-center" style="width: 100%">
-        <!-- TODO: Add support for URL arddress text box, "Add to backend server profiles" button, "Ignore this port on ... bakend" button, and "Duplicate tab (creates a new profile which browses to current URL)"  -->
+        <!-- TODO: Add support for URL arddress text box, "Add to remote webserver profiles" button, "Ignore this port on ... remote" button, and "Duplicate tab (creates a new profile which browses to current URL)"  -->
         <v-app-bar-nav-icon @click="$store.state.drawer = !$store.state.drawer" class="flex-shrink-1 flex-grow-0"></v-app-bar-nav-icon>
         <div class="d-flex align-center flex-grow-1 flex-shrink-1" v-if="$store.state.currentComponent !== null">
           <v-icon class="flex-shrink-1 flex-grow-0 ma-1" v-if="!currentComponentIsServer">{{ $store.state.currentComponent.icon }}</v-icon>
@@ -43,9 +43,13 @@
               </v-btn>
             </template>
             <span>
-              Ignore any WebServer listening on "{{ $store.state.currentComponent.server.port }}" port for "{{
-                $store.state.currentComponent.server.hostname
-              }}" backend (can be changed in settings view)
+              Ignore any WebServer listening on "{{ $store.state.currentComponent.server.port }}" port for
+              {{
+                $store.state.currentComponent.server.isLocalhost()
+                  ? ` remote server at ${$store.state.currentComponent.server.hostname} `
+                  : " localhost "
+              }}
+              (can be changed in settings view)
             </span>
           </v-tooltip>
           <!-- Kill button -->
@@ -82,14 +86,14 @@
         </v-btn-toggle>
       </v-list>
 
-      <!-- Listening web servers for each backends -->
+      <!-- Listening web servers for each remote servers -->
       <v-list dense class="pt-0">
         <!-- TODO: Change color of each servers with it respective main color from its webview and display a preview tumbail on over -->
 
         <v-list>
           <v-divider></v-divider>
           <v-list class="pt-0">
-            <!-- Backend title -->
+            <!-- RemoteServer title -->
             <v-list-item class="mb-0 pb-0">
               <v-list-item-content>
                 <v-list-item-title class="mb-0 pb-0">
@@ -109,15 +113,15 @@
                     <strong>{{ $store.state.webserverTabs.length }} </strong> listening web-servers found
                   </span>
                   <v-alert v-else dense type="warning" outlined class="pt-2 pb-2 pl-2 pr-0">
-                    <!-- TODO: replace "localhost" with current backend binding -->
-                    <!-- TODO: if not localhost, also report about remote backend connection success(badge? if no server + precision in this warning message) or failure (error message) -->
-                    No listening web-server have been found on "localhost" backend
+                    <!-- TODO: replace "localhost" with current remote server binding (v-for) -->
+                    <!-- TODO: if not localhost, also report about remote server connection success(badge? if no server + precision in this warning message) or failure (error message) -->
+                    No listening web-server have been found on "localhost"
                   </v-alert>
                 </v-list-item-subtitle>
               </v-list-item-content>
             </v-list-item>
 
-            <!-- Backend webservers list -->
+            <!-- RemoteServer webservers list -->
             <v-list-item-group v-model="selectedView" v-if="$store.state.webserverTabs.length > 0">
               <v-list-item v-for="serverTab in $store.state.webserverTabs" :key="serverTab.id" :value="serverTab.id" link>
                 <v-list-item-icon>
@@ -136,9 +140,9 @@
               </v-list-item>
             </v-list-item-group>
 
-            <!-- Console/Editor buttons (backend-wide views) -->
+            <!-- Console/Editor buttons (remoteServer-wide views) -->
             <v-btn-toggle borderless group class="d-flex justify-center" v-model="selectedView">
-              <v-btn v-for="otherView in $store.state.otherBackendViews" :key="otherView.name" :value="otherView.name">
+              <v-btn v-for="otherView in $store.state.RemoteServerViews" :key="otherView.name" :value="otherView.name">
                 <!-- <v-tooltip bottom>
                   <template> -->
                 <v-icon left> {{ otherView.icon }} </v-icon>
@@ -151,23 +155,6 @@
           </v-list>
 
           <v-divider></v-divider>
-
-          <!-- TODO: replace it with template looping over backends -->
-          <v-list class="pt-0">
-            <!-- Backend title -->
-            <v-list-item>
-              <v-list-item-content>
-                <v-list-item-title class="text-overline font-weight-bold white--text">
-                  Remote Backend #1
-                </v-list-item-title>
-                <v-list-item-subtitle class="text-wrap font-weight-light">
-                  <v-alert type="warning" outlined class="pt-2 pb-2 pl-2 pr-0 mt-2">
-                    No listening web-server have been found on "Remote Backend #1" backend
-                  </v-alert>
-                </v-list-item-subtitle>
-              </v-list-item-content>
-            </v-list-item>
-          </v-list>
         </v-list>
 
         <v-divider></v-divider>
@@ -185,14 +172,19 @@
 
     <v-main>
       <!-- Error message snackbar (unexpected error have been thrown) -->
-      <v-snackbar :value="$store.state.snackbarErrorMessage === null" :multi-line="true" color="accent-4" elevation="16">
+      <v-snackbar
+        v-if="$store.state.snackbarErrorMessage !== null"
+        :value="$store.state.snackbarErrorMessage !== null"
+        :multi-line="Boolean($store.state.snackbarErrorMessage.details)"
+        color="accent-4"
+        elevation="16"
+      >
         <p class="text-justify">
-          <span class="font-weight-bold"> Unexpected error have been thrown:<br /> </span>
-          "<em>{{ $store.state.errorMessage }}</em
-          >"
+          <span class="font-weight-bold text-capitalize"> {{ $store.state.snackbarErrorMessage.title }}:<br /> </span>
+          <em v-if="$store.state.snackbarErrorMessage.details">"{{ $store.state.snackbarErrorMessage.details }}"</em>
         </p>
-        <template v-slot:action="{ attrs }">
-          <v-btn text color="red" v-bind="attrs" @click="$store.commit('closeMessage', { type: 'error' })">
+        <template v-if="$store.state.snackbarErrorMessage.hasCloseButton" v-slot:action="{ attrs }">
+          <v-btn text color="red" v-bind="attrs" @click="$store.commit('closeMessage', $store.state.snackbarErrorMessage.type)">
             Close
           </v-btn>
         </template>
@@ -213,7 +205,7 @@
         <v-tabs-items v-else v-model="selectedView" continuous class="full-height-width">
           <v-tab-item
             class="full-height-width"
-            v-for="otherView in [...$store.state.otherGlobalViews, ...$store.state.otherBackendViews]"
+            v-for="otherView in [...$store.state.otherGlobalViews, ...$store.state.RemoteServerViews]"
             :key="otherView.name"
             :value="otherView.name"
           >
@@ -265,7 +257,7 @@ export default {
         curr = state.webserverTabs.find(tab => tab.id === newVal);
         if (!notNullNorUndefined(curr)) {
           curr = state.otherGlobalViews.find(view => view.name === newVal);
-          if (!notNullNorUndefined(curr)) curr = state.otherBackendViews.find(view => view.name === newVal);
+          if (!notNullNorUndefined(curr)) curr = state.RemoteServerViews.find(view => view.name === newVal);
         }
       }
       // If could't find current view, set to default one
@@ -283,7 +275,7 @@ export default {
 
   created: function() {
     console.log("!created!");
-    this.$store.dispatch("loadLocalSettings");
+    this.loadLocalSettings(this.$vuetify);
   },
 
   destroyed: function() {
@@ -292,7 +284,7 @@ export default {
 
   errorCaptured: function(err, component, info) {
     const errMessage = `"${component}" component thrown unexpected error. (error: "${err}"; error info: "${info}")`;
-    this.showMessage({ type: "error", message: `ERR: "${errMessage}"` });
+    this.showMessage({ type: messageTypes.ERROR, details: `ERR: "${errMessage}"` });
     return this.$store.state.debug; // Error should be propagating further in debug
   }
 };

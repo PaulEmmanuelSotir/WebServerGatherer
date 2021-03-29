@@ -39,7 +39,7 @@
                   <v-btn v-bind="attrs" v-on="on">Ignore {{ serverTab.server.port }} port</v-btn>
                 </template>
                 <span>
-                  Ignore any WebServer listening on port "{{ serverTab.server.port }}" for this backend (can be undo in settings view)
+                  Ignore any WebServer listening on port "{{ serverTab.server.port }}" for this remote (can be undo in settings view)
                 </span>
               </v-tooltip>
             </v-col>

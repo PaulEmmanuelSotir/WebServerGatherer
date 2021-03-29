@@ -1,13 +1,13 @@
 import superagent from "superagent";
 
-import { notNullNorUndefined } from "@/js/utils";
-import Backend from "@/js/backend";
+import RemoteServer from "@/js/remoteServer";
+import { notNullNorUndefined, messageTypes } from "@/js/utils";
 
 export class WebServerTab {
   constructor(
     id,
     server,
-    backend,
+    remote,
     currentPath = "",
     latestIcon = null,
     latestStatus = null,
@@ -19,7 +19,7 @@ export class WebServerTab {
   ) {
     this.id = id;
     this.server = server;
-    this.backend = backend;
+    this.remote = remote;
     this.currentPath = currentPath;
     this.latestIcon = latestIcon;
     this.latestStatus = latestStatus;
@@ -102,13 +102,13 @@ export function scanWebservers({ commit, dispatch, state }) {
   // TODO: if already waiting for a response, queue or ignore other calls
   const scan_promises = [];
 
-  for (let i in state.availableBackends) {
-    const backend = state.availableBackends[i];
-    if (state.debug) console.log(`Scanning for listening ports on ${backend.hostname} backend`);
+  for (let i in state.availableRemoteServers) {
+    const remote = state.availableRemoteServers[i];
+    if (state.debug) console.log(`Scanning for listening ports on ${remote.hostname} remote server`);
 
     scan_promises.push(
       superagent
-        .get(`${backend.hostname}:${Backend.CONSTANTS.backend_port}${Backend.CONSTANTS.backend_scan_endpoint}`)
+        .get(`${remote.hostname}:${RemoteServer.CONSTANTS.remote_port}${RemoteServer.CONSTANTS.remote_scan_endpoint}`)
         .set("accept", "json")
         .then(res => {
           const body = JSON.parse(res.text);
@@ -118,11 +118,11 @@ export function scanWebservers({ commit, dispatch, state }) {
           commit("updateServers", servers);
         })
         .catch(err => {
-          const errMess = `Error occured when calling "${Backend.CONSTANTS.backend_scan_endpoint}" endpoint on "${backend.hostname}:${
-            Backend.CONSTANTS.backend_port
+          const errMess = `Error occured when calling "${RemoteServer.CONSTANTS.remote_scan_endpoint}" endpoint on "${remote.hostname}:${
+            RemoteServer.CONSTANTS.remote_port
           }". error="${JSON.stringify(err)}"`;
           console.log(JSON.stringify(errMess));
-          dispatch("showMessage", { type: "error", message: errMess });
+          dispatch("showMessage", { type: messageTypes.ERROR, details: errMess });
         })
     );
   }
@@ -130,11 +130,11 @@ export function scanWebservers({ commit, dispatch, state }) {
 }
 
 export function killWebserver({ commit, dispatch, state }, server) {
-  // TODO: take servers array instead and group kill queries by backend (server.hostname for now) (see groupby https://gist.github.com/ramsunvtech/102ac0267d33c2cc1ccdf9158d0f7fca)
+  // TODO: take servers array instead and group kill queries by remote (server.hostname for now) (see groupby https://gist.github.com/ramsunvtech/102ac0267d33c2cc1ccdf9158d0f7fca)
   if (state.debug) console.log(`About to kill webserver located at "${server.currentURL}"...`);
 
   superagent
-    .post(`${server.hostname}:${Backend.CONSTANTS.backend_port}${Backend.CONSTANTS.backend_kill_endpoint}`)
+    .post(`${server.hostname}:${RemoteServer.CONSTANTS.remote_port}${RemoteServer.CONSTANTS.remote_kill_endpoint}`)
     .send([server.port])
     .set("accept", "json")
     .then(res => {
@@ -143,32 +143,33 @@ export function killWebserver({ commit, dispatch, state }, server) {
       const cmd_results = kill_rslt.cmd_results;
       const pids_results = kill_rslt.pids_from_ports_cmd_result;
       if (cmd_results.length > 0 && cmd_results[0].success) {
-        // Immediatlely perform a new webserver scan (refresh webserver list) and notify user that webserver(s) have been sucessfully killed
+        // Immediatlely perform a new webserver scan (refresh webserver list) and notify user that webserver(s) have been successfully killed
         // TODO: cancel any ongoing webserver scan before starting a new one?
         dispatch("scanWebservers");
-        commit("successMessage", {
-          title: `Webserver(s) sucessfully killed`,
-          message: `Webserver(s) listening on "${server.port}" have been sucessfully killed.`,
-          details: `${kill_rslt.pids.length} process(es) have been terminated (PIDs: "${kill_rslt.pids}")`
+        commit("showMessage", {
+          type: messageTypes.SUCCESS,
+          title: `Webserver(s) successfully killed`,
+          details: `Webserver(s) listening on "${server.port}" have been successfully killed.
+                    ${kill_rslt.pids.length} process(es) have been terminated (PIDs: "${kill_rslt.pids}")`
         });
       } else if (!pids_results.success) {
         // Commit error message for failed retreival of PIDs from given port(s)
         dispatch("showMessage", {
-          type: "error",
-          message: `ERR: Couldn't find ProcessID(s) from "${server.port}" port (server(s) no longer be listening?). Info="${pids_results}"`
+          type: messageTypes.ERROR,
+          details: `ERR: Couldn't find ProcessID(s) from "${server.port}" port (server(s) no longer be listening?). Info="${pids_results}"`
         });
       } else {
         // Commit error message for failed kill command(s)
         dispatch("showMessage", {
-          type: "error",
-          message: `ERR: Couldn't kill "${kill_rslt.pids}" process(es) listening on "${server.port}" port. Info="${kill_rslt.cmd_results}"`
+          type: messageTypes.ERROR,
+          details: `ERR: Couldn't kill "${kill_rslt.pids}" process(es) listening on "${server.port}" port. Info="${kill_rslt.cmd_results}"`
         });
       }
     })
     .catch(err => {
-      const errMess = `Error occured when calling "${Backend.CONSTANTS.backend_kill_endpoint}" endpoint
-                       on "${server.hostname}" backend. error="${JSON.stringify(err)}"`;
+      const errMess = `Error occured when calling "${RemoteServer.CONSTANTS.remote_kill_endpoint}" endpoint
+                       on "${server.hostname}" remote server. error="${JSON.stringify(err)}"`;
       console.log(JSON.stringify(errMess));
-      dispatch("showMessage", { type: "error", message: errMess });
+      dispatch("showMessage", { type: messageTypes.ERROR, details: errMess });
     });
 }

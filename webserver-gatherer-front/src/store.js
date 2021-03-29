@@ -1,11 +1,11 @@
 import Vue from "vue";
 import Vuex from "vuex";
 
-import { writeLocalSettings, loadLocalSettings } from "@/js/settings";
-import Backend from "@/js/backend";
+import { updateLocalSettings, loadLocalSettings } from "@/js/settings";
 import { scanWebservers, killWebserver } from "@/js/webserver";
+import { IDGenerator, messageTypes } from "@/js/utils";
 import { WebServerTab } from "@/js/webserver";
-import { IDGenerator } from "@/js/utils";
+import RemoteServer from "@/js/remoteServer";
 
 Vue.use(Vuex);
 const WebserverTabIDGen = new IDGenerator();
@@ -21,22 +21,23 @@ const globalViews = [
 
 const state = {
   debug: process.env.NODE_ENV !== "production",
-  availableBackends: [new Backend("127.0.0.1")],
+  availableRemoteServers: [new RemoteServer(0, "127.0.0.1")], // ID 0 is reserved for localhost
   drawer: null,
-  snackbarErrorMessage: "",
+  snackbarErrorMessage: null,
+  successMessage: null,
   currentComponent: globalViews[0],
   title: "Web-Server Gatherer",
   version: "0.0.1",
   author: "PaulEmmanuel SOTIR",
   github: "https://github.com/PaulEmmanuelSotir/DashboardWebUIGatherer",
-  localSettingsFilepath: "settings.json",
-  settings: null,
+  localSettingsFilepath: "localsettings.json",
+  localSettings: null,
   scanInterval: null,
   webserverTabs: [],
   otherGlobalViews: globalViews,
-  otherBackendViews: [
-    { name: "Console", icon: "mdi-console", component: "console", description: "backend terminal prompt throught SSH tunnel" },
-    { name: "Editor", icon: "mdi-code-braces", component: "editor", description: "code editor for easier script running on backend" }
+  RemoteServerViews: [
+    { name: "Console", icon: "mdi-console", component: "console", description: "Remote server terminal prompt throught SSH tunnel" },
+    { name: "Editor", icon: "mdi-code-braces", component: "editor", description: "code editor for easier script running on remote server" }
   ]
 };
 
@@ -51,9 +52,9 @@ const mutations = {
       let matchingTabs = state.webserverTabs.filter(tab => newWebservers[i].isSame(tab.server));
       if (matchingTabs.length === 0) {
         // Create a new WebserverTab from newly scanned server (wasn't present among existing/displayed WebserverTabs)
-        // TODO: provide backend by grouping server by backend when scaning (assumed to be localhost for now)
-        const backend = state.availableBackends[0];
-        const t = new WebServerTab(WebserverTabIDGen.getNewId(), newWebservers[i], backend);
+        // TODO: provide remote server by grouping webserver by their remote when scanning (assumed to be localhost for now)
+        const remote = state.availableRemoteServers[0];
+        const t = new WebServerTab(WebserverTabIDGen.getNewId(), newWebservers[i], remote);
         NewServerTabs.push(t);
       } else {
         // Add existing webserver tab to new tabs array (respective server is still among scanned servers)
@@ -66,7 +67,7 @@ const mutations = {
       if (!NewServerTabs.some(tab => state.currentComponent.id === tab.id)) {
         if (NewServerTabs.length > 0) {
           state.currentComponent = NewServerTabs[0];
-        } else if (state.availableBackends.lenght > 0) {
+        } else if (state.availableRemoteServers.lenght > 0) {
           state.currentComponent = state.otherGlobalViews[0]; // Tiles
         } else {
           state.currentComponent = state.otherGlobalViews[1]; // Settings
@@ -76,28 +77,25 @@ const mutations = {
 
     state.webserverTabs = NewServerTabs;
   },
-  showErrorMessage(state, payload) {
-    console.log(payload.message);
-    state.snackbarErrorMessage = payload.message;
-  },
-  showSuccessMessage(state, payload) {
-    // Set default values for payload title, details, timeout, hasCloseButton and icon (only payload.message is mandatory)
-    payload.title = payload.title ? payload.title : "Success";
-    payload.details = payload.details ? payload.details : "";
-    payload.timeout = payload.timeout ? payload.timeout : 4000;
-    payload.hasCloseButton = payload.hasCloseButton ? payload.hasCloseButton : true;
-
-    state.sucessMessage = payload;
-  },
-  closeMessage(state, type) {
-    if (type == "error") {
-      state.snackbarErrorMessage = null;
-    } else if (type === "success") {
-      state.sucessMessage = null;
+  commitMessage(state, payload) {
+    if (payload.type === messageTypes.ERROR) {
+      state.snackbarErrorMessage = payload;
+    } else if (payload.type === messageTypes.SUCCESS) {
+      // TODO: Display successMessage in App.vue and replace snackbarErrorMessage here
+      state.snackbarErrorMessage = payload;
     }
   },
-  setLocalSettings(state, newSettings, scanInterval = null) {
-    state.settings = newSettings;
+  closeMessage(state, type) {
+    if (type == messageTypes.ERROR) {
+      state.snackbarErrorMessage = null;
+    } else if (type === messageTypes.SUCCESS) {
+      // TODO: Display successMessage in App.vue and replace snackbarErrorMessage here
+      state.snackbarErrorMessage = null;
+    }
+  },
+  setLocalSettings(state, { settings, scanInterval }) {
+    state.localSettings = settings;
+    if (state.scanInterval !== null) clearInterval(state.scanInterval);
     state.scanInterval = scanInterval;
   },
   changeCurrentComponent(state, currentView) {
@@ -108,28 +106,28 @@ const mutations = {
 // actions are functions that cause side effects and can involve asynchronous operations (may be appended to vue's 'methods')
 const actions = {
   loadLocalSettings,
-  writeLocalSettings,
+  updateLocalSettings,
   scanWebservers,
   killWebserver,
-  showMessage: ({ commit }, payload) => {
-    let openMutation;
-    if (payload.type == "error") {
-      openMutation = "showSuccessMessage";
-    } else if (payload.type === "success") {
-      openMutation = "showErrorMessage";
-    }
+  showMessage: ({ state, commit }, payload) => {
+    // Set default values for payload title, hasCloseButton and timeout (only payload.details is mandatory)
+    payload.title = payload.title ? payload.title : payload.type;
+    payload.timeout = typeof payload.timeout === "number" ? payload.timeout : 7000;
+    payload.hasCloseButton = typeof payload.hasCloseButton !== "boolean" ? true : payload.hasCloseButton;
 
-    const timeout = payload.timeout ? payload.timeout : 7000;
-    if (timeout > 0) {
-      // Setup close timeout (zero or negative timout values allow to disable timeout)
-      setTimeout(() => {
-        commit("closeMessage", payload.type);
-      }, timeout);
-    }
+    if (!Object.values(messageTypes).includes(payload.type)) {
+      console.log(`Error: Wrong message type: "${payload.type}", valid values are: "${messageTypes}".`);
+    } else {
+      if (state.debug) console.log(`${payload.type}: ${payload.details}`);
 
-    delete payload.timeout;
-    delete payload.type;
-    commit(openMutation, payload);
+      if (payload.timeout > 0) {
+        // Setup close timeout (zero or negative timout values allow to disable timeout)
+        setTimeout(() => {
+          commit("closeMessage", payload.type);
+        }, payload.timeout);
+      }
+      commit("commitMessage", payload);
+    }
   }
 };
 
@@ -147,7 +145,7 @@ const getters = {
   //   if (typeof curr !== "undefined" && curr !== null) {
   //     curr = state.otherGlobalViews.find(view => state.currentOtherViewName === view.name);
   //     if (typeof curr === "undefined" || curr === null)
-  //       curr = state.otherBackendViews.find(view => state.currentOtherViewName === view.name);
+  //       curr = state.RemoteServerViews.find(view => state.currentOtherViewName === view.name);
   //   }
 
   //   if (typeof curr !== "undefined" && curr !== null) return curr;
