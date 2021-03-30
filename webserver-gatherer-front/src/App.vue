@@ -38,16 +38,21 @@
           <!-- Ignore/filter-out port button -->
           <v-tooltip bottom class="flex-shrink-1 flex-grow-0" v-if="currentComponentIsServer">
             <template v-slot:activator="{ on, attrs }">
-              <v-btn text v-bind="attrs" v-on="on">
+              <v-btn
+                text
+                v-bind="attrs"
+                v-on="on"
+                @click="$store.state.currentComponent.remote.addIgnoredPort($store, $store.state.currentComponent.server.port)"
+              >
                 <v-icon>mdi-filter-remove</v-icon>
               </v-btn>
             </template>
             <span>
-              Ignore any WebServer listening on "{{ $store.state.currentComponent.server.port }}" port for
+              Ignore any WebServer listening on "{{ $store.state.currentComponent.server.port }}" port from
               {{
-                $store.state.currentComponent.server.isLocalhost()
-                  ? ` remote server at ${$store.state.currentComponent.server.hostname} `
-                  : " localhost "
+                $store.state.currentComponent.server.isLocalhost
+                  ? " localhost "
+                  : ` remote server at "${$store.state.currentComponent.server.hostname}" `
               }}
               (can be changed in settings view)
             </span>
@@ -229,7 +234,7 @@ import WebserverView from "@/components/Webserver.vue";
 import Settings from "@/components/Settings.vue";
 import Console from "@/components/Console.vue";
 import Editor from "@/components/Editor.vue";
-import { notNullNorUndefined } from "@/js/utils";
+import { notNullNorUndefined, messageTypes } from "@/js/utils";
 
 export default {
   name: "webserver-gatherer",
@@ -284,7 +289,7 @@ export default {
 
   errorCaptured: function(err, component, info) {
     const errMessage = `"${component}" component thrown unexpected error. (error: "${err}"; error info: "${info}")`;
-    this.showMessage({ type: messageTypes.ERROR, details: `ERR: "${errMessage}"` });
+    this.showMessage({ type: messageTypes.ERROR, details: errMessage });
     return this.$store.state.debug; // Error should be propagating further in debug
   }
 };

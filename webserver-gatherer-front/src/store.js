@@ -2,10 +2,9 @@ import Vue from "vue";
 import Vuex from "vuex";
 
 import { updateLocalSettings, loadLocalSettings } from "@/js/settings";
-import { scanWebservers, killWebserver } from "@/js/webserver";
+import { scanWebservers, killWebserver, WebServerTab } from "@/js/webserver";
 import { IDGenerator, messageTypes } from "@/js/utils";
-import { WebServerTab } from "@/js/webserver";
-import RemoteServer from "@/js/remoteServer";
+import { localhost } from "@/js/remoteServer";
 
 Vue.use(Vuex);
 const WebserverTabIDGen = new IDGenerator();
@@ -21,7 +20,7 @@ const globalViews = [
 
 const state = {
   debug: process.env.NODE_ENV !== "production",
-  availableRemoteServers: [new RemoteServer(0, "127.0.0.1")], // ID 0 is reserved for localhost
+  availableRemoteServers: [localhost],
   drawer: null,
   snackbarErrorMessage: null,
   successMessage: null,
@@ -48,17 +47,21 @@ const mutations = {
     // Find matching server(s) between scanned 'newWebservers' and current/displayed server tabs and create new tabs array
     const NewServerTabs = [];
     for (let i in newWebservers) {
-      // NOTE: There may be more than one tab with matching server if user duplicated a tab to browse to different pathes on the same webserver
-      let matchingTabs = state.webserverTabs.filter(tab => newWebservers[i].isSame(tab.server));
-      if (matchingTabs.length === 0) {
-        // Create a new WebserverTab from newly scanned server (wasn't present among existing/displayed WebserverTabs)
-        // TODO: provide remote server by grouping webserver by their remote when scanning (assumed to be localhost for now)
-        const remote = state.availableRemoteServers[0];
-        const t = new WebServerTab(WebserverTabIDGen.getNewId(), newWebservers[i], remote);
-        NewServerTabs.push(t);
-      } else {
-        // Add existing webserver tab to new tabs array (respective server is still among scanned servers)
-        NewServerTabs.push(...matchingTabs);
+      // TODO: provide remote server by grouping webserver by their remote when scanning (assumed to be localhost for now)
+      const remote = state.localSettings.remotes.find(r => r.id === localhost.id);
+
+      // Filter out webservers which are among ingored ports list
+      if (!remote.ignoredPorts.includes(newWebservers[i].port)) {
+        // NOTE: There may be more than one tab with matching server if user duplicated a tab to browse to different pathes on the same webserver
+        let matchingTabs = state.webserverTabs.filter(tab => newWebservers[i].isSame(tab.server));
+        if (matchingTabs.length === 0) {
+          // Create a new WebserverTab from newly scanned server (wasn't present among existing/displayed WebserverTabs)
+          const t = new WebServerTab(WebserverTabIDGen.getNewId(), newWebservers[i], remote);
+          NewServerTabs.push(t);
+        } else {
+          // Add existing webserver tab to new tabs array (respective server is still among scanned servers)
+          NewServerTabs.push(...matchingTabs);
+        }
       }
     }
 

@@ -108,7 +108,7 @@ export function scanWebservers({ commit, dispatch, state }) {
 
     scan_promises.push(
       superagent
-        .get(`${remote.hostname}:${RemoteServer.CONSTANTS.remote_port}${RemoteServer.CONSTANTS.remote_scan_endpoint}`)
+        .get(`${remote.hostname}:${RemoteServer.CONSTANTS.api_port}${RemoteServer.CONSTANTS.remote_scan_endpoint}`)
         .set("accept", "json")
         .then(res => {
           const body = JSON.parse(res.text);
@@ -118,8 +118,8 @@ export function scanWebservers({ commit, dispatch, state }) {
           commit("updateServers", servers);
         })
         .catch(err => {
-          const errMess = `Error occured when calling "${RemoteServer.CONSTANTS.remote_scan_endpoint}" endpoint on "${remote.hostname}:${
-            RemoteServer.CONSTANTS.remote_port
+          const errMess = `Error occured when calling "${RemoteServer.CONSTANTS.remote_scan_endpoint}" endpoint at "${remote.hostname}:${
+            RemoteServer.CONSTANTS.api_port
           }". error="${JSON.stringify(err)}"`;
           console.log(JSON.stringify(errMess));
           dispatch("showMessage", { type: messageTypes.ERROR, details: errMess });
@@ -134,7 +134,7 @@ export function killWebserver({ commit, dispatch, state }, server) {
   if (state.debug) console.log(`About to kill webserver located at "${server.currentURL}"...`);
 
   superagent
-    .post(`${server.hostname}:${RemoteServer.CONSTANTS.remote_port}${RemoteServer.CONSTANTS.remote_kill_endpoint}`)
+    .post(`${server.hostname}:${RemoteServer.CONSTANTS.api_port}${RemoteServer.CONSTANTS.remote_kill_endpoint}`)
     .send([server.port])
     .set("accept", "json")
     .then(res => {
@@ -156,19 +156,19 @@ export function killWebserver({ commit, dispatch, state }, server) {
         // Commit error message for failed retreival of PIDs from given port(s)
         dispatch("showMessage", {
           type: messageTypes.ERROR,
-          details: `ERR: Couldn't find ProcessID(s) from "${server.port}" port (server(s) no longer be listening?). Info="${pids_results}"`
+          details: `Couldn't find ProcessID(s) from "${server.port}" port (server(s) no longer be listening?). Info="${pids_results}"`
         });
       } else {
         // Commit error message for failed kill command(s)
         dispatch("showMessage", {
           type: messageTypes.ERROR,
-          details: `ERR: Couldn't kill "${kill_rslt.pids}" process(es) listening on "${server.port}" port. Info="${kill_rslt.cmd_results}"`
+          details: `Couldn't kill "${kill_rslt.pids}" process(es) listening on "${server.port}" port. Info="${kill_rslt.cmd_results}"`
         });
       }
     })
     .catch(err => {
       const errMess = `Error occured when calling "${RemoteServer.CONSTANTS.remote_kill_endpoint}" endpoint
-                       on "${server.hostname}" remote server. error="${JSON.stringify(err)}"`;
+                       at "${server.hostname}" remote server. error="${JSON.stringify(err)}"`;
       console.log(JSON.stringify(errMess));
       dispatch("showMessage", { type: messageTypes.ERROR, details: errMess });
     });

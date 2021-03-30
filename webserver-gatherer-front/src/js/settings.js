@@ -1,12 +1,13 @@
 import fs from "fs";
 
-import RemoteServer from "@/js/remoteServer";
-import { messageTypes } from "@/js/utils";
+import RemoteServer, { localhost } from "@/js/remoteServer";
+import { messageTypes, notNullNorUndefined } from "@/js/utils";
 
 // TODO: remove it
 const dummyRemoteServer = new RemoteServer(1, "192.168.0.1", "Remote AWS VM #1", "", true, 22);
+
 export class LocalSettings {
-  constructor(scanEvery = 2000, darktheme = false, remotes = [dummyRemoteServer]) {
+  constructor(scanEvery = 2000, darktheme = false, remotes = [localhost, dummyRemoteServer]) {
     this.scanEvery = scanEvery;
     this.darktheme = darktheme;
     this.remotes = remotes;
@@ -14,7 +15,7 @@ export class LocalSettings {
 
   apply(commit, dispatch, vuetify) {
     // Update vuetify theme
-    vuetify.theme.dark = this.darktheme;
+    if (notNullNorUndefined(vuetify) && vuetify.theme.dark !== this.darktheme) vuetify.theme.dark = this.darktheme;
 
     // Apply scan interval update
     dispatch("scanWebservers");
@@ -34,8 +35,9 @@ export function updateLocalSettings({ commit, dispatch, state }, { localSettings
     const strSettings = JSON.stringify(localSettings);
     fs.writeFile(state.localSettingsFilepath, strSettings, err => {
       if (err) {
-        dispatch("showMessage", { type: messageTypes.ERROR, details: `ERR: Failed to write local settings file: "${err.message}"` });
-        if (state.debug) console.log(`ERR: Failed to write local settings file: "${err.message}"`);
+        const msg = `Failed to write local settings file: "${err.message}"`;
+        dispatch("showMessage", { type: messageTypes.ERROR, details: msg });
+        if (state.debug) console.log(`ERR: ${msg}`);
       } else {
         localSettings.apply(commit, dispatch, vuetify);
         if (state.debug) console.log(`Local settings file "${state.localSettingsFilepath}" succesfully saved!`);
@@ -54,14 +56,23 @@ export function loadLocalSettings({ commit, dispatch, state }, vuetify) {
         const localSettings = new LocalSettings();
         dispatch("updateLocalSettings", { localSettings: localSettings, vuetify: vuetify });
       } else {
-        dispatch("showMessage", { type: messageTypes.ERROR, details: `ERR: Failed to read local settings file: "${err.message}"` });
+        dispatch("showMessage", { type: messageTypes.ERROR, details: `Failed to read local settings file: "${err.message}"` });
         return;
       }
     } else {
       if (state.debug) console.log(`Parsing JSON local settings from data="${data}"...`);
       const localSettings = Object.assign(new LocalSettings(), JSON.parse(data));
       console.log(`parsed localSettings: ${localSettings}`);
-      localSettings.apply(commit, dispatch, vuetify);
+
+      // Make sure localhost is allways among local settings remotes
+      let localhostFound = localSettings.remotes.find(r => localhost.id === r.id);
+      if (typeof localhostFound === "undefined") {
+        localSettings.remotes.push(localhost);
+        dispatch("updateLocalSettings", { localSettings: localSettings, vuetify: vuetify });
+      } else {
+        // Apply settings otherwise (updateLocalSettings will apply it if localhost was missing)
+        localSettings.apply(commit, dispatch, vuetify);
+      }
     }
   });
 }

@@ -5,7 +5,7 @@
         <!-- TODO: Allow both form and config setting from code editor -->
         <v-expansion-panels accordion multiple focusable v-model="curr_panels">
           <!-- Remote RemoteServer configs (contains WebServer Profiles) -->
-          <v-expansion-panel expand v-for="remote in $store.state.availableRemoteServers" :key="remote.id">
+          <v-expansion-panel expand v-for="remote in $store.state.localSettings.remotes" :key="remote.id">
             <v-expansion-panel-header>
               "{{ remote.displayName }}" WebServer profiles - Hostname: "{{ remote.hostname }}"
             </v-expansion-panel-header>
@@ -26,7 +26,7 @@
               <v-form ref="sshRemoteServersForm" @submit.prevent="submitSSHRemoteServers">
                 <!-- TODO: Add a "Add remote server" btn + eventually modify toggle switch into checkbok action on list-item -->
                 <v-list>
-                  <v-list-item v-for="(remote, index) in $v.localSettings.remotes.$each.$iter" :key="remote.id">
+                  <v-list-item v-for="remote in $v.localSettings.remotes.$each.$iter" :key="remote.id">
                     <v-list-item-title> {{ remote.displayName }} at "{{ remote.hostname }}" </v-list-item-title>
                     <v-list-item-icon> mdi-key-variant </v-list-item-icon>
                     <!-- TODO: Add a "Remove remote server" btn + eventually modify toggle switch into checkbok action on list-item -->
@@ -34,16 +34,25 @@
                     <v-list-item-content>
                       <v-switch
                         v-model="remote.enabled.$model"
-                        hint="Enable SSH connection to this remote server to look for hosted web-servers"
+                        :hint="
+                          remote.isLocalhost
+                            ? 'Enable hosted web-servers scanning on localhost'
+                            : 'Enable SSH connection to this remote server to look for hosted web-servers'
+                        "
                         inset
                         required
-                        label="Enable SSH connection to this Remote server"
+                        :label="
+                          remote.isLocalhost
+                            ? 'Enable web-servers scanning on localhost'
+                            : 'Enable web-servers scanning on this Remote server throught SSH'
+                        "
                         persistent-hint
                       ></v-switch>
                       <!-- TODO: Make sure hostname is unique -->
                       <v-text-field
                         v-model.trim="remote.hostname.$model"
                         clearable
+                        :disabled="remote.isLocalhost"
                         required
                         label="Hostname"
                         hint="Remote server hostname to which SSH connection is made"
@@ -51,16 +60,18 @@
                       >
                       </v-text-field>
                       <v-text-field
-                        v-model.number="remote.port.$model"
+                        v-model.number="remote.sshport.$model"
                         required
+                        v-if="!remote.isLocalhost"
                         label="SSH Port"
                         type="number"
                         hint="Remote server SSH port"
-                        :class="status(remote.port)"
+                        :class="status(remote.sshport)"
                       >
                       </v-text-field>
                       <v-text-field
                         v-model.trim="remote.sshopts.$model"
+                        v-if="!remote.isLocalhost"
                         clearable
                         placeholder="-l username -o 'ConnectTimeout=10\'"
                         label="Additional SSH command line arguments"
@@ -145,7 +156,7 @@
 // TODO: refactor "apply" code in settings.js
 
 import { validationMixin } from "vuelidate";
-import { required, maxLength, minLength, sameAs, ipAddress, url, or } from "vuelidate/lib/validators";
+import { required, maxLength, minLength, ipAddress, url, or, integer, minValue, maxValue } from "vuelidate/lib/validators";
 import { cloneObj } from "@/js/utils";
 import RemoteServer from "@/js/remoteServer";
 import { IDGenerator } from "@/js/utils";
@@ -181,9 +192,13 @@ export default {
         maxLength: maxLength(500),
         $each: {
           hostname: { required, maxLength: maxLength(200), minLength: minLength(1), ipOrUrl: or(ipAddress, url) },
-          sshopts: { sameAsHostname: sameAs(200) },
-          port: { required },
-          enabled: { required }
+          sshopts: { maxLength: maxLength(200), minLength: minLength(1) },
+          sshport: { integer, minValue: minValue(0), maxValue: maxValue(65535) },
+          enabled: { integer, minValue: minValue(0), maxValue: maxValue(1) },
+          ignoredPorts: {
+            maxLength: maxLength(1000),
+            $each: { integer, minValue: minValue(0), maxValue: maxValue(65535) }
+          }
         }
       },
       scanEvery: { required },

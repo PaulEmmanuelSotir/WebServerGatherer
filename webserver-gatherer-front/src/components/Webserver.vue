@@ -36,10 +36,14 @@
               <v-btn class="mb-2" @click="retry">Retry</v-btn>
               <v-tooltip bottom>
                 <template v-slot:activator="{ on, attrs }">
-                  <v-btn v-bind="attrs" v-on="on">Ignore {{ serverTab.server.port }} port</v-btn>
+                  <v-btn v-bind="attrs" v-on="on" @click="serverTab.remote.addIgnoredPort($store, serverTab.server.port)">
+                    Ignore {{ serverTab.server.port }} port
+                  </v-btn>
                 </template>
                 <span>
-                  Ignore any WebServer listening on port "{{ serverTab.server.port }}" for this remote (can be undo in settings view)
+                  Ignore any WebServer listening on "{{ serverTab.server.port }}" port from
+                  {{ serverTab.server.isLocalhost ? ` remote server at ${serverTab.server.hostname} ` : " localhost " }}
+                  (can be changed in settings view)
                 </span>
               </v-tooltip>
             </v-col>
@@ -51,6 +55,8 @@
 </template>
 
 <script>
+import { mapGetters, mapActions } from "vuex";
+
 export default {
   name: "webserver-view",
   props: {
@@ -62,9 +68,10 @@ export default {
 
   data: () => ({}),
 
-  computed: {},
+  computed: { ...mapGetters(["webserverProgress"]) },
 
   methods: {
+    ...mapActions(["killWebserver", "showMessage"]),
     onWebViewFailedLoading: function(errorCode, errorDescription, validatedURL) {
       this.serverTab.webviewError = true;
       this.serverTab.webviewErrorInfo = `Error: Failed to load webpage from webview: "${errorDescription}"; error-code="${errorCode}"; validatedURL="${validatedURL}"`;
