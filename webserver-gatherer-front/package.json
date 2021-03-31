@@ -22,7 +22,6 @@
     "electron-log": "^4.3.1",
     "electron-updater": "^4.3.5",
     "monaco-editor": "^0.22.3",
-    "monaco-editor-webpack-plugin": "^3.0.0",
     "roboto-fontface": "*",
     "superagent": "^6.1.0",
     "vue": "^2.6.11",
@@ -49,6 +48,7 @@
     "eslint-plugin-vue": "^6.2.2",
     "file-loader": "^6.2.0",
     "html-webpack-plugin": "^4.5.1",
+    "monaco-editor-webpack-plugin": "^3.0.1",
     "prettier": "^1.19.1",
     "style-loader": "^2.0.0",
     "vue-cli-plugin-electron-builder": "~2.0.0-rc.5",
@@ -68,5 +68,28 @@
       }
     ],
     "appId": "com.github.paulemmanuelsotir.webservergatherer"
+  },
+  "eslintConfig": {
+    "root": true,
+    "env": {
+      "node": true
+    },
+    "extends": [
+      "plugin:vue/essential",
+      "eslint:recommended",
+      "@vue/prettier"
+    ],
+    "parserOptions": {
+      "parser": "babel-eslint"
+    },
+    "rules": {
+      "max-len": [
+        "error",
+        {
+          "code": 140,
+          "comments": 300
+        }
+      ]
+    }
   }
 }

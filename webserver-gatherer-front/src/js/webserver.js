@@ -75,7 +75,6 @@ export class WebServerTab {
 
 export class Server {
   constructor(port, hostname, serviceName, isHttps = false) {
-    //TODO: change this: (take as arg) this.id = serverIdGenerator.getNewId();
     this.port = port;
     this.hostname = hostname;
     this.serviceName = serviceName;
