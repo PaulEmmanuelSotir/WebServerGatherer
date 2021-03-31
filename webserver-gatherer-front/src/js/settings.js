@@ -46,23 +46,28 @@ export function updateLocalSettings({ commit, dispatch, state }, { localSettings
   }
 }
 
+export function resetLocalSettings({ dispatch, state }, vuetify) {
+  const localSettings = new LocalSettings();
+  dispatch("updateLocalSettings", { localSettings: localSettings, vuetify: vuetify });
+  const msg = `Sucessfully created new settings file at "${state.localSettingsFilepath}" with its default values`;
+  dispatch("showMessage", { type: messageTypes.SUCCESS, details: msg, title: "Created JSON settings file" });
+}
+
 export function loadLocalSettings({ commit, dispatch, state }, vuetify) {
-  if (state.debug) console.log(`Reading local settings from "${state.localSettingsFilepath}"`);
+  if (state.debug) console.log(`Reading local settings from "${state.localSettingsFilepath}"...`);
 
   fs.readFile(state.localSettingsFilepath, "utf-8", (err, data) => {
     if (err) {
       if (err.code === "ENOENT") {
         // If file doesnt exists, create it
-        const localSettings = new LocalSettings();
-        dispatch("updateLocalSettings", { localSettings: localSettings, vuetify: vuetify });
+        resetLocalSettings({ dispatch: dispatch, state: state }, vuetify);
       } else {
         dispatch("showMessage", { type: messageTypes.ERROR, details: `Failed to read local settings file: "${err.message}"` });
         return;
       }
     } else {
-      if (state.debug) console.log(`Parsing JSON local settings from data="${data}"...`);
       const localSettings = Object.assign(new LocalSettings(), JSON.parse(data));
-      console.log(`parsed localSettings: ${localSettings}`);
+      if (state.debug) console.log(`Parsed JSON local settings: "${JSON.stringify(localSettings)}"`);
 
       // Make sure localhost is allways among local settings remotes
       let localhostFound = localSettings.remotes.find(r => localhost.id === r.id);

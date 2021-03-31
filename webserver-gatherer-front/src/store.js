@@ -8,15 +8,26 @@ import { localhost } from "@/js/remoteServer";
 
 Vue.use(Vuex);
 const WebserverTabIDGen = new IDGenerator();
-const globalViews = [
-  {
+
+export const globalViews = {
+  SETTINGS: { name: "Settings", icon: "mdi-settings", component: "settings" },
+  TILES: {
     name: "Server tiles view",
     icon: "mdi-view-compact",
     component: "servers-tile-view",
     description: "WebServers tile view displaying all listening webservers at once"
-  },
-  { name: "Settings", icon: "mdi-settings", component: "settings" }
-];
+  }
+};
+
+export const remoteServerViews = {
+  CONSOLE: { name: "Console", icon: "mdi-console", component: "console", description: "Remote server terminal prompt throught SSH tunnel" },
+  EDITOR: {
+    name: "Editor",
+    icon: "mdi-code-braces",
+    component: "editor",
+    description: "code editor for easier script running on remote server"
+  }
+};
 
 const state = {
   debug: process.env.NODE_ENV !== "production",
@@ -24,7 +35,7 @@ const state = {
   drawer: null,
   snackbarErrorMessage: null,
   successMessage: null,
-  currentComponent: globalViews[0],
+  currentComponent: globalViews.SETTINGS,
   title: "Web-Server Gatherer",
   version: "0.0.1",
   author: "PaulEmmanuel SOTIR",
@@ -32,12 +43,7 @@ const state = {
   localSettingsFilepath: "localsettings.json",
   localSettings: null,
   scanInterval: null,
-  webserverTabs: [],
-  otherGlobalViews: globalViews,
-  RemoteServerViews: [
-    { name: "Console", icon: "mdi-console", component: "console", description: "Remote server terminal prompt throught SSH tunnel" },
-    { name: "Editor", icon: "mdi-code-braces", component: "editor", description: "code editor for easier script running on remote server" }
-  ]
+  webserverTabs: []
 };
 
 // Mutations are operations that actually mutate the state. each mutation handler gets the entire state tree as the first argument,
@@ -68,13 +74,9 @@ const mutations = {
     if (typeof state.currentComponent.id !== "undefined") {
       // Update Current (Displayed/Selected webserver tab) to a another one if it have been removed (no longer among scanned servers)
       if (!NewServerTabs.some(tab => state.currentComponent.id === tab.id)) {
-        if (NewServerTabs.length > 0) {
-          state.currentComponent = NewServerTabs[0];
-        } else if (state.availableRemoteServers.lenght > 0) {
-          state.currentComponent = state.otherGlobalViews[0]; // Tiles
-        } else {
-          state.currentComponent = state.otherGlobalViews[1]; // Settings
-        }
+        if (NewServerTabs.length > 0) state.currentComponent = NewServerTabs[0];
+        else if (state.availableRemoteServers.lenght > 0) state.currentComponent = globalViews.TILES;
+        else state.currentComponent = globalViews.SETTINGS;
       }
     }
 
@@ -112,6 +114,13 @@ const actions = {
   updateLocalSettings,
   scanWebservers,
   killWebserver,
+  confirmDialog: ({ dispatch }, { message, choices, title = null }) => {
+    // Show a confirmation message popup before calling callback
+    // TODO: implement it (and showMessage with messageTypes.ASK)
+    // TODO: and return a promise over anwser
+    dispatch("showMessage", { title: title ? title : "Confirmation", details: message, type: messageTypes.ASK });
+    return choices[0];
+  },
   showMessage: ({ state, commit }, payload) => {
     // Set default values for payload title, hasCloseButton and timeout (only payload.details is mandatory)
     payload.title = payload.title ? payload.title : payload.type;
@@ -143,19 +152,6 @@ const getters = {
   currentComponentIsServer: state => {
     return typeof state.currentComponent.id !== "undefined";
   }
-  // currentComponent: state => {
-  //   let curr = state.webserverTabs.find(tab => tab.id === state.currentView);
-  //   if (typeof curr !== "undefined" && curr !== null) {
-  //     curr = state.otherGlobalViews.find(view => state.currentOtherViewName === view.name);
-  //     if (typeof curr === "undefined" || curr === null)
-  //       curr = state.RemoteServerViews.find(view => state.currentOtherViewName === view.name);
-  //   }
-
-  //   if (typeof curr !== "undefined" && curr !== null) return curr;
-  //   console.log(`Error: Couldn't identify current view from 'state.currentOtherViewName=${state.currentOtherViewName}',
-  //                'state.currentView=${state.currentView}'`);
-  //   return null;
-  // }
 };
 
 // A Vuex instance is created by combining the state, mutations, actions, and getters.

@@ -18,7 +18,8 @@ export function cloneObj(source) {
 
 export const messageTypes = {
   ERROR: "error",
-  SUCCESS: "success"
+  SUCCESS: "success",
+  ASK: "ask"
 };
 
 export class IDGenerator {

@@ -2,7 +2,6 @@
   <v-app>
     <v-app-bar color="primary" dark app>
       <v-container class="d-flex align-center" style="width: 100%">
-        <!-- TODO: Add support for URL arddress text box, "Add to remote webserver profiles" button, "Ignore this port on ... remote" button, and "Duplicate tab (creates a new profile which browses to current URL)"  -->
         <v-app-bar-nav-icon @click="$store.state.drawer = !$store.state.drawer" class="flex-shrink-1 flex-grow-0"></v-app-bar-nav-icon>
         <div class="d-flex align-center flex-grow-1 flex-shrink-1" v-if="$store.state.currentComponent !== null">
           <v-icon class="flex-shrink-1 flex-grow-0 ma-1" v-if="!currentComponentIsServer">{{ $store.state.currentComponent.icon }}</v-icon>
@@ -11,16 +10,24 @@
             v-if="!currentComponentIsServer || $store.state.currentComponent.latestPageTitle"
             >{{ $store.state.currentComponent.name }}</v-toolbar-title
           >
+
+          <!-- Address Bar (Webview URL) -->
           <v-text-field
             class="flex-grow-1 flex-shrink-1 ml-4 mr-4 mt-7 centered-input"
             type="text"
-            :prepend-inner-icon="$store.state.currentComponent.icon"
+            ref="AddressBar"
             clearable
+            v-model.trim="$v.currentPath.$model"
+            :prefix="$store.state.currentComponent.server.baseURL"
+            :prepend-inner-icon="$store.state.currentComponent.icon"
+            :append-icon="addressBarIsAtCurrentURL ? 'mdi-magnify' : 'mdi-reload'"
+            @click:append="onAddressBarBrowseOrReload"
+            @keydown.enter="onAddressBarBrowseOrReload"
+            :disabled="$store.state.currentComponent.webviewIsLoading"
             single-line
             solo-inverted
             rounded
             dense
-            :value="$store.state.currentComponent.currentURL"
             v-if="currentComponentIsServer"
           >
             <template v-slot:progress>
@@ -34,6 +41,7 @@
               ></v-progress-linear>
             </template>
           </v-text-field>
+
           <!-- TODO: allow to clone a webserver view into another 'tab' (e.g. mdi-content-copy or mdi-content-duplicate icon) -->
           <!-- Ignore/filter-out port button -->
           <v-tooltip bottom class="flex-shrink-1 flex-grow-0" v-if="currentComponentIsServer">
@@ -57,6 +65,7 @@
               (can be changed in settings view)
             </span>
           </v-tooltip>
+
           <!-- Kill button -->
           <v-tooltip bottom class="flex-shrink-1 flex-grow-0" v-if="currentComponentIsServer">
             <template v-slot:activator="{ on, attrs }">
@@ -65,6 +74,17 @@
               </v-btn>
             </template>
             <span> Kill WebServer process listening on "{{ $store.state.currentComponent.server.port }}" port </span>
+          </v-tooltip>
+
+          <!-- Settings reset button -->
+          <v-tooltip bottom class="flex-shrink-1 flex-grow-1" v-if="$store.state.currentComponent.name === globalViews.SETTINGS.name">
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn right v-bind="attrs" v-on="on" @click="resetLocalSettingsWithConfirmation">
+                <v-icon> mdi-backup-restore </v-icon>
+                <span class="font-weight-regular"> Restore default settings </span>
+              </v-btn>
+            </template>
+            <span> All application settings will be lost and restored to its defaults, including remote servers list </span>
           </v-tooltip>
         </div>
       </v-container>
@@ -79,12 +99,7 @@
 
         <!-- WebServer Tiles and Settings global views -->
         <v-btn-toggle borderless group class="mb-0 d-flex flex-column" v-model="selectedView">
-          <v-btn
-            class="justify-start ma-0 pr-4 pl-4"
-            v-for="otherView in $store.state.otherGlobalViews"
-            :key="otherView.name"
-            :value="otherView.name"
-          >
+          <v-btn class="justify-start ma-0 pr-4 pl-4" v-for="otherView in globalViews" :key="otherView.name" :value="otherView.name">
             <v-icon left> {{ otherView.icon }} </v-icon>
             <span class="font-weight-regular"> {{ otherView.name }} </span>
           </v-btn>
@@ -147,7 +162,7 @@
 
             <!-- Console/Editor buttons (remoteServer-wide views) -->
             <v-btn-toggle borderless group class="d-flex justify-center" v-model="selectedView">
-              <v-btn v-for="otherView in $store.state.RemoteServerViews" :key="otherView.name" :value="otherView.name">
+              <v-btn v-for="otherView in remoteServerViews" :key="otherView.name" :value="otherView.name">
                 <!-- <v-tooltip bottom>
                   <template> -->
                 <v-icon left> {{ otherView.icon }} </v-icon>
@@ -210,7 +225,7 @@
         <v-tabs-items v-else v-model="selectedView" continuous class="full-height-width">
           <v-tab-item
             class="full-height-width"
-            v-for="otherView in [...$store.state.otherGlobalViews, ...$store.state.RemoteServerViews]"
+            v-for="otherView in [...Object.values(globalViews), ...Object.values(remoteServerViews)]"
             :key="otherView.name"
             :value="otherView.name"
           >
@@ -228,6 +243,8 @@
 
 <script>
 import { mapGetters, mapActions } from "vuex";
+import { validationMixin } from "vuelidate";
+import { maxLength, ipAddress, url, or } from "vuelidate/lib/validators";
 
 import ServersTileView from "@/components/ServersTileView.vue";
 import WebserverView from "@/components/Webserver.vue";
@@ -235,9 +252,12 @@ import Settings from "@/components/Settings.vue";
 import Console from "@/components/Console.vue";
 import Editor from "@/components/Editor.vue";
 import { notNullNorUndefined, messageTypes } from "@/js/utils";
+import { globalViews, remoteServerViews } from "@/store";
 
 export default {
   name: "webserver-gatherer",
+
+  mixins: [validationMixin],
 
   components: {
     serversTileView: ServersTileView,
@@ -248,7 +268,10 @@ export default {
   },
 
   data: () => ({
-    selectedView: "Server tiles view"
+    selectedView: "Server tiles view",
+    currentPath: "",
+    globalViews: globalViews,
+    remoteServerViews: remoteServerViews
   }),
 
   watch: {
@@ -261,22 +284,56 @@ export default {
       if (notNullNorUndefined(newVal)) {
         curr = state.webserverTabs.find(tab => tab.id === newVal);
         if (!notNullNorUndefined(curr)) {
-          curr = state.otherGlobalViews.find(view => view.name === newVal);
-          if (!notNullNorUndefined(curr)) curr = state.RemoteServerViews.find(view => view.name === newVal);
+          curr = globalViews.find(view => view.name === newVal);
+          if (!notNullNorUndefined(curr)) curr = remoteServerViews.find(view => view.name === newVal);
         }
       }
-      // If could't find current view, set to default one
-      if (!notNullNorUndefined(curr)) curr = this.$store.state.globalViews[0];
+      // If could't find current view, set to default one (settings)
+      if (!notNullNorUndefined(curr)) curr = globalViews.TILES;
 
       this.$store.commit("changeCurrentComponent", curr);
     }
   },
 
   computed: {
-    ...mapGetters(["config", "webserverProgress", "currentComponentIsServer"])
+    ...mapGetters(["webserverProgress", "currentComponentIsServer"]),
+    addressBarIsAtCurrentURL: function() {
+      return this.currentPath !== this.$store.state.currentComponent.currentPath;
+    }
   },
 
-  methods: { ...mapActions(["scanWebservers", "loadLocalSettings", "updateLocalSettings", "killWebserver", "showMessage"]) },
+  methods: {
+    ...mapActions([
+      "confirmDialog",
+      "scanWebservers",
+      "loadLocalSettings",
+      "updateLocalSettings",
+      "resetLocalSettings",
+      "killWebserver",
+      "showMessage"
+    ]),
+    onAddressBarBrowseOrReload: function() {
+      this.$v.currentPath.$touch();
+      this.$refs.AddressBar.blur();
+      this.addressBarIsAtCurrentURL ? this.BrowseWebviewTo(this.currentPath) : this.ReloadWebview();
+    },
+    resetLocalSettingsWithConfirmation: function() {
+      const msg =
+        "You are about to reset all settings to their defaults. All existing settings will be lost, including remote server list. Please confirm:";
+      const choices = ["Confirm settings reset", "Cancel"];
+      this.confirmDialog(msg, choices).then(answer => {
+        if (answer === 0) this.resetLocalSettings(this.$vuetify);
+      });
+    }
+  },
+
+  // Vuelidate validation of current webview URL text field (allows to browse to paths under webserver domain)
+  validations: {
+    currentPath: {
+      maxLength: maxLength(1000),
+      ipOrUrl: or(ipAddress, url)
+    }
+  },
 
   created: function() {
     console.log("!created!");

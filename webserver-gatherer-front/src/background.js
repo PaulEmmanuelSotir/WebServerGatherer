@@ -65,6 +65,19 @@ electron.app.on("ready", async () => {
   createWindow();
 });
 
+// Avoids creating a new BrowserWindows when browsing from a webview and modify its 'src' instead, allowing to browse inplace (without creating popup/windows)
+electron.app.on("web-contents-created", function(webContentsCreatedEvent, contents) {
+  console.log(`New windows : ${contents.getType()}"`);
+  if (contents.getType() === "webview") {
+    contents.on("new-window", function(newWindowEvent, url) {
+      // TODO: remove it and modify webview src field
+      console.log(`Browsing to ${url}...`);
+
+      newWindowEvent.preventDefault();
+    });
+  }
+});
+
 // Exit cleanly on request from parent process in development mode.
 if (isDevelopment) {
   if (process.platform === "win32") {

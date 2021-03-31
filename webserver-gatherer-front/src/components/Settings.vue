@@ -2,7 +2,7 @@
   <v-container id="settings">
     <v-row class="text-center">
       <v-col class="mb-4">
-        <!-- TODO: Allow both form and config setting from code editor -->
+        <!-- TODO: Allow both form and code editor edit methods for local settings  -->
         <v-expansion-panels accordion multiple focusable v-model="curr_panels">
           <!-- Remote RemoteServer configs (contains WebServer Profiles) -->
           <v-expansion-panel expand v-for="remote in $store.state.localSettings.remotes" :key="remote.id">
@@ -153,10 +153,10 @@
 </template>
 
 <script>
-// TODO: refactor "apply" code in settings.js
-
+import { mapActions } from "vuex";
 import { validationMixin } from "vuelidate";
 import { required, maxLength, minLength, ipAddress, url, or, integer, minValue, maxValue } from "vuelidate/lib/validators";
+
 import { cloneObj } from "@/js/utils";
 import RemoteServer from "@/js/remoteServer";
 import { IDGenerator } from "@/js/utils";
@@ -207,6 +207,7 @@ export default {
   },
 
   methods: {
+    ...mapActions(["resetLocalSettings"]),
     resetForm() {
       this.$v.$reset();
       this.localSettings = cloneObj(this.$store.state.localSettings);
@@ -230,6 +231,7 @@ export default {
       };
     },
     addRemoteServer() {
+      // TODO: refactor this to use a vuex mutation instead!
       this.localSettings.remotes.push(new RemoteServer(this.remoteServerIdGenerator.getNewId()));
     }
   },
