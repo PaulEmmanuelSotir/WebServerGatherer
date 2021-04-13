@@ -66,6 +66,8 @@ _**legend**: ♻ = WIP; 💤: TODO; 💥 = IMPORTANT; 👍 = DONE (doesn't lists
 - ♻ Implement command prompt utilities to Xterm console view (+ fix xterm size to fit all available space)
 - ♻ Implement webserver start backend API (runs pre-registered commands throught SSH and allow to run or add them from console view)
 - ♻ Implement console view allowing to run a terminal on remote server(s) or localhost from front app (using xterm)
+- 💤 Review performance issues with lighthouse + replace md-icons font download by a static style file + allow render framerates higher than 60fps
+- 💤 Add github CI/CL hooks/actions to compile and test new releases and make it available for electron updater
 - 💤 Screen capture showcasing application usage and main features (and add it to readme.md as a GIF for better communication on application usage/goal/target)  
 - 💤 Fix retry button on webview error
 - 💤 Implement webservers tile view in front app
