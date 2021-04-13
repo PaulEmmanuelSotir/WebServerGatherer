@@ -71,31 +71,25 @@ export default {
   computed: { ...mapGetters(["webserverProgress"]) },
 
   methods: {
-    ...mapActions(["killWebserver", "showMessage"]),
-    onWebViewFailedLoading: function(errorCode, errorDescription, validatedURL) {
-      this.serverTab.webviewError = true;
-      this.serverTab.webviewErrorInfo = `Error: Failed to load webpage from webview: "${errorDescription}"; error-code="${errorCode}"; validatedURL="${validatedURL}"`;
-      this.serverTab.webviewIsLoading = true;
+    ...mapActions(["killWebserver", "showMessage", "updateWebServerTabStatus"]),
+    onWebViewFailedLoading: function (errorCode, errorDescription, validatedURL) {
+      const err = `Error: Failed to load webpage from webview:
+                   "${errorDescription}"; error-code="${errorCode}"; validatedURL="${validatedURL}"`;
+      this.updateWebServerTabStatus(this.serverTab, null, true, err, false, true);
     },
-    onWebViewCrashed: function() {
-      this.serverTab.webviewError = true;
-      this.serverTab.webviewErrorInfo = "";
-      this.serverTab.webviewCrashed = true;
-      this.serverTab.webviewIsLoading = false;
+    onWebViewCrashed: function () {
+      this.updateWebServerTabStatus(this.serverTab, null, true, "", true, false);
     },
-    onWebViewStartLoading: function() {
-      this.serverTab.webviewIsLoading = true;
+    onWebViewStartLoading: function () {
+      this.updateWebServerTabStatus(this.serverTab, null, false, "", false, true);
     },
-    onWebViewStopLoading: function(e) {
+    onWebViewStopLoading: function (e) {
       console.log(`WebView Stoped loading (e="${JSON.stringify(e)}")!`);
-      this.serverTab.webviewIsLoading = false;
+      this.updateWebServerTabStatus(this.serverTab, null, null, null, null, false);
       // TODO: check whether webserver succefully displayed web server UI?
     },
-    retry: function() {
-      this.serverTab.webviewError = false;
-      this.serverTab.webviewErrorInfo = null;
-      this.serverTab.webviewCrashed = false;
-      this.serverTab.webviewIsLoading = true;
+    retry: function () {
+      this.updateWebServerTabStatus(this.serverTab, null, false, null, false, true);
       this.$refs[`${this.serverTab.id}-webview`].reload();
     }
   }

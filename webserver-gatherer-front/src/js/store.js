@@ -2,7 +2,7 @@ import Vue from "vue";
 import Vuex from "vuex";
 
 import { updateLocalSettings, loadLocalSettings } from "@/js/settings";
-import { scanWebservers, killWebserver, WebServerTab } from "@/js/webserver";
+import { scanWebservers, killWebserver, WebServerTab, updateWebServerTabStatus } from "@/js/webserver";
 import { IDGenerator, messageTypes } from "@/js/utils";
 import { localhost } from "@/js/remoteServer";
 
@@ -10,7 +10,7 @@ Vue.use(Vuex);
 const WebserverTabIDGen = new IDGenerator();
 
 export const globalViews = {
-  SETTINGS: { name: "Settings", icon: "mdi-settings", component: "settings" },
+  SETTINGS: { name: "Settings", icon: "mdi-cog", component: "settings" },
   TILES: {
     name: "Server tiles view",
     icon: "mdi-view-compact",
@@ -82,6 +82,16 @@ const mutations = {
 
     state.webserverTabs = NewServerTabs;
   },
+  updateWebServerTab(state, webserverTab) {
+    const tabIdx = state.webserverTabs.findIndex(t => t.id === webserverTab.id);
+    if (tabIdx >= 0) {
+      state.webserverTabs[tabIdx] = webserverTab;
+    } else {
+      if (state.debug)
+        console.log(`Warning: "updateWebServerTab" could't retreive given web-server tab among "state.webserverTabs",
+                     no matching ID. WebserverTab "${JSON.stringify(webserverTab)}"`);
+    }
+  },
   commitMessage(state, payload) {
     if (payload.type === messageTypes.ERROR) {
       state.snackbarErrorMessage = payload;
@@ -114,6 +124,7 @@ const actions = {
   updateLocalSettings,
   scanWebservers,
   killWebserver,
+  updateWebServerTabStatus,
   confirmDialog: ({ dispatch }, { message, choices, title = null }) => {
     // Show a confirmation message popup before calling callback
     // TODO: implement it (and showMessage with messageTypes.ASK)

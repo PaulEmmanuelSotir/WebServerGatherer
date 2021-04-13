@@ -17,7 +17,7 @@
             type="text"
             ref="AddressBar"
             clearable
-            v-model.trim="$v.currentPath.$model"
+            v-model.trim="currentPath.$model"
             :prefix="$store.state.currentComponent.server.baseURL"
             :prepend-inner-icon="$store.state.currentComponent.icon"
             :append-icon="addressBarIsAtCurrentURL ? 'mdi-magnify' : 'mdi-reload'"
@@ -91,7 +91,7 @@
     </v-app-bar>
 
     <v-navigation-drawer v-model="$store.state.drawer" dark app>
-      <v-list dense class=" pb-0">
+      <v-list dense class="pb-0">
         <!-- App title -->
         <v-container>
           <span class="text-uppercase text-h6"> {{ $store.state.title }}</span>
@@ -100,8 +100,8 @@
         <!-- WebServer Tiles and Settings global views -->
         <v-btn-toggle borderless group class="mb-0 d-flex flex-column" v-model="selectedView">
           <v-btn class="justify-start ma-0 pr-4 pl-4" v-for="otherView in globalViews" :key="otherView.name" :value="otherView.name">
-            <v-icon left> {{ otherView.icon }} </v-icon>
-            <span class="font-weight-regular"> {{ otherView.name }} </span>
+            <v-icon> {{ otherView.icon }} </v-icon>
+            <span class="ml-2 font-weight-regular"> {{ otherView.name }} </span>
           </v-btn>
         </v-btn-toggle>
       </v-list>
@@ -110,8 +110,8 @@
       <v-list dense class="pt-0">
         <!-- TODO: Change color of each servers with it respective main color from its webview and display a preview tumbail on over -->
 
+        <v-divider></v-divider>
         <v-list>
-          <v-divider></v-divider>
           <v-list class="pt-0">
             <!-- RemoteServer title -->
             <v-list-item class="mb-0 pb-0">
@@ -134,7 +134,8 @@
                   </span>
                   <v-alert v-else dense type="warning" outlined class="pt-2 pb-2 pl-2 pr-0">
                     <!-- TODO: replace "localhost" with current remote server binding (v-for) -->
-                    <!-- TODO: if not localhost, also report about remote server connection success(badge? if no server + precision in this warning message) or failure (error message) -->
+                    <!-- TODO: if not localhost, also report about remote server connection success(badge? if no server
+                    + precision in this warning message) or failure (error message) -->
                     No listening web-server have been found on "localhost"
                   </v-alert>
                 </v-list-item-subtitle>
@@ -161,12 +162,13 @@
             </v-list-item-group>
 
             <!-- Console/Editor buttons (remoteServer-wide views) -->
-            <v-btn-toggle borderless group class="d-flex justify-center" v-model="selectedView">
-              <v-btn v-for="otherView in remoteServerViews" :key="otherView.name" :value="otherView.name">
-                <!-- <v-tooltip bottom>
+            <v-btn-toggle rounded background-color="transparent" class="d-flex justify-center" v-model="selectedView">
+              <v-btn outlined elevation="1" v-for="otherView in remoteServerViews" :key="otherView.name" :value="otherView.name">
+                <!-- TODO: Figure out how to setup tooltip on button toggle -->
+                <!--<v-tooltip bottom>
                   <template> -->
-                <v-icon left> {{ otherView.icon }} </v-icon>
-                <span class="font-weight-regular"> {{ otherView.name }} </span>
+                <v-icon> {{ otherView.icon }} </v-icon>
+                <span class="ml-1 font-weight-regular"> {{ otherView.name }} </span>
                 <!-- </template> -->
                 <!-- <span> {{ otherView.name }}: {{ otherView.description }} </span> -->
                 <!-- </v-tooltip> -->
@@ -177,14 +179,26 @@
           <v-divider></v-divider>
         </v-list>
 
-        <v-divider></v-divider>
-
         <v-list-item elevation="4">
           <v-list-item-content>
-            <v-btn :href="$store.state.github" target="_blank">
-              <v-icon>mdi-git</v-icon>
-              <span class="ml-2">Project Github</span>
-            </v-btn>
+            <v-container class="pa-0 d-flex flex-column">
+              <!-- Project Github link button -->
+              <v-btn class="mb-2" elevation="1" rounded :href="$store.state.github" target="_blank">
+                <v-icon>mdi-git</v-icon>
+                <span class="ml-2 font-weight-regular">Project GitHub</span>
+              </v-btn>
+
+              <!-- Privacy policy dialog (button opens privacy policy dialog) -->
+              <v-dialog v-model="privacyPolicyDialog" width="50%">
+                <template v-slot:activator="{ on, attrs }">
+                  <v-btn rounded elevation="1" color="green darken-1" v-bind="attrs" v-on="on">
+                    <v-icon>mdi-shield-search</v-icon>
+                    <span class="ml-2 font-weight-regular">Privacy Policy</span>
+                  </v-btn>
+                </template>
+                <privacyPolicy></privacyPolicy>
+              </v-dialog>
+            </v-container>
           </v-list-item-content>
         </v-list-item>
       </v-list>
@@ -243,61 +257,70 @@
 
 <script>
 import { mapGetters, mapActions } from "vuex";
-import { validationMixin } from "vuelidate";
-import { maxLength, ipAddress, url, or } from "vuelidate/lib/validators";
+//import { validationMixin } from "vuelidate";
+//import { maxLength, ipAddress, url, or } from "vuelidate/lib/validators";
 
 import ServersTileView from "@/components/ServersTileView.vue";
+import PrivacyPolicy from "@/components/privacyPolicy.vue";
 import WebserverView from "@/components/Webserver.vue";
 import Settings from "@/components/Settings.vue";
 import Console from "@/components/Console.vue";
 import Editor from "@/components/Editor.vue";
 import { notNullNorUndefined, messageTypes } from "@/js/utils";
-import { globalViews, remoteServerViews } from "@/store";
+import { globalViews, remoteServerViews } from "@/js/store";
 
 export default {
   name: "webserver-gatherer",
 
-  mixins: [validationMixin],
+  //mixins: [validationMixin],
 
   components: {
     serversTileView: ServersTileView,
     webserverView: WebserverView,
     settings: Settings,
     console: Console,
-    editor: Editor
+    editor: Editor,
+    privacyPolicy: PrivacyPolicy
   },
 
   data: () => ({
     selectedView: "Server tiles view",
     currentPath: "",
     globalViews: globalViews,
-    remoteServerViews: remoteServerViews
+    remoteServerViews: remoteServerViews,
+    privacyPolicyDialog: false
   }),
 
   watch: {
-    selectedView: function(newVal, oldVal) {
-      console.log(`Switched from "${oldVal}" to "${newVal}"`);
+    selectedView: function (newVal, oldVal) {
+      // Don't allow to unselect a view (select previous value back)
+      if (!notNullNorUndefined(newVal) && notNullNorUndefined(oldVal)) {
+        newVal = oldVal;
+        this.selectedView = newVal;
+      } else {
+        console.log(`Switched from "${oldVal}" to "${newVal}"`);
 
-      // Determine which view is currently selected
-      const state = this.$store.state;
-      let curr = null;
-      if (notNullNorUndefined(newVal)) {
-        curr = state.webserverTabs.find(tab => tab.id === newVal);
-        if (!notNullNorUndefined(curr)) {
-          curr = globalViews.find(view => view.name === newVal);
-          if (!notNullNorUndefined(curr)) curr = remoteServerViews.find(view => view.name === newVal);
+        // Determine which view is currently selected
+        const state = this.$store.state;
+        let curr = null;
+        if (notNullNorUndefined(newVal)) {
+          curr = state.webserverTabs.find(tab => tab.id === newVal);
+          if (!notNullNorUndefined(curr)) {
+            curr = Object.values(globalViews).find(view => view.name === newVal);
+            if (!notNullNorUndefined(curr)) curr = Object.values(remoteServerViews).find(view => view.name === newVal);
+          }
         }
-      }
-      // If could't find current view, set to default one (settings)
-      if (!notNullNorUndefined(curr)) curr = globalViews.TILES;
+        // If could't find current view, set to default one (settings)
+        if (!notNullNorUndefined(curr)) curr = globalViews.TILES;
 
-      this.$store.commit("changeCurrentComponent", curr);
+        this.$store.commit("changeCurrentComponent", curr);
+      }
     }
   },
 
   computed: {
     ...mapGetters(["webserverProgress", "currentComponentIsServer"]),
-    addressBarIsAtCurrentURL: function() {
+    addressBarIsAtCurrentURL: function () {
       return this.currentPath !== this.$store.state.currentComponent.currentPath;
     }
   },
@@ -312,14 +335,14 @@ export default {
       "killWebserver",
       "showMessage"
     ]),
-    onAddressBarBrowseOrReload: function() {
-      this.$v.currentPath.$touch();
+    onAddressBarBrowseOrReload: function () {
+      //this.$v.currentPath.$touch();
       this.$refs.AddressBar.blur();
       this.addressBarIsAtCurrentURL ? this.BrowseWebviewTo(this.currentPath) : this.ReloadWebview();
     },
-    resetLocalSettingsWithConfirmation: function() {
-      const msg =
-        "You are about to reset all settings to their defaults. All existing settings will be lost, including remote server list. Please confirm:";
+    resetLocalSettingsWithConfirmation: function () {
+      const msg = `You are about to reset all settings to their defaults.
+                   All existing settings will be lost, including remote server list. Please confirm:`;
       const choices = ["Confirm settings reset", "Cancel"];
       this.confirmDialog(msg, choices).then(answer => {
         if (answer === 0) this.resetLocalSettings(this.$vuetify);
@@ -330,21 +353,21 @@ export default {
   // Vuelidate validation of current webview URL text field (allows to browse to paths under webserver domain)
   validations: {
     currentPath: {
-      maxLength: maxLength(1000),
-      ipOrUrl: or(ipAddress, url)
+      // maxLength: maxLength(1000),
+      // ipOrUrl: or(ipAddress, url)
     }
   },
 
-  created: function() {
+  created: function () {
     console.log("!created!");
     this.loadLocalSettings(this.$vuetify);
   },
 
-  destroyed: function() {
+  destroyed: function () {
     console.log("!destroyed!");
   },
 
-  errorCaptured: function(err, component, info) {
+  errorCaptured: function (err, component, info) {
     const errMessage = `"${component}" component thrown unexpected error. (error: "${err}"; error info: "${info}")`;
     this.showMessage({ type: messageTypes.ERROR, details: errMessage });
     return this.$store.state.debug; // Error should be propagating further in debug

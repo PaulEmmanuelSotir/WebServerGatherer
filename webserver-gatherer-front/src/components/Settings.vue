@@ -9,17 +9,13 @@
             <v-expansion-panel-header>
               "{{ remote.displayName }}" WebServer profiles - Hostname: "{{ remote.hostname }}"
             </v-expansion-panel-header>
-            <v-expansion-panel-content>
-              TODO...
-            </v-expansion-panel-content>
+            <v-expansion-panel-content> TODO... </v-expansion-panel-content>
           </v-expansion-panel>
 
           <!-- Remote Servers SSH connection config-->
           <v-expansion-panel expand>
             <v-expansion-panel-header>
-              <v-icon left>
-                mdi-key-variant
-              </v-icon>
+              <v-icon left> mdi-key-variant </v-icon>
               <span> Remote servers SSH connection setup </span>
             </v-expansion-panel-header>
             <v-expansion-panel-content>
@@ -75,7 +71,8 @@
                         clearable
                         placeholder="-l username -o 'ConnectTimeout=10\'"
                         label="Additional SSH command line arguments"
-                        hint="Additional command line arguments given to SSH when connecting to remote server (Note that port is already provided and can be changed from its own field) "
+                        hint="Additional command line arguments given to SSH when connecting to remote server
+                              (Note that port is already provided and can be changed from its own field) "
                         :class="status(remote.sshopts)"
                       >
                       </v-text-field>
@@ -93,9 +90,7 @@
                   <!--:disabled="!valid" -->
                   submit
                 </v-btn>
-                <v-alert v-else dense type="info">
-                  No remote server have been configured so far
-                </v-alert>
+                <v-alert v-else dense type="info"> No remote server have been configured so far </v-alert>
 
                 <v-btn class="mr-4" @click="addRemoteServer" :disabled="submitStatus === 'PENDING'">
                   <v-icon>mdi-plus</v-icon>
@@ -110,9 +105,7 @@
 
           <!-- Local front settings -->
           <v-expansion-panel expand>
-            <v-expansion-panel-header>
-              Front Settings
-            </v-expansion-panel-header>
+            <v-expansion-panel-header> Front Settings </v-expansion-panel-header>
             <v-expansion-panel-content>
               <v-form ref="settingsForm" @submit.prevent="submitLocalSettings">
                 <!-- <v-checkbox v-model="localSettings.autoLocahostScan" label="Automatic localhost server scan" />
@@ -154,8 +147,9 @@
 
 <script>
 import { mapActions } from "vuex";
-import { validationMixin } from "vuelidate";
-import { required, maxLength, minLength, ipAddress, url, or, integer, minValue, maxValue } from "vuelidate/lib/validators";
+import { reactive } from "@vue/composition-api"; // if migrating to Vue 3.x, use `import { reactive } from "vue"` instead
+import useVuelidate from "@vuelidate/core";
+import { required, maxLength, minLength, ipAddress, url, or, integer, minValue, maxValue } from "@vuelidate/validators";
 
 import { cloneObj } from "@/js/utils";
 import RemoteServer from "@/js/remoteServer";
@@ -175,35 +169,38 @@ function defineSettingsRules() {
 export default {
   name: "settings",
 
-  mixins: [validationMixin],
+  setup() {
+    const data = reactive({
+      curr_panels: [0, 1, 2],
+      localSettings: null,
+      localform: null,
+      remoteForms: {},
+      submitStatus: null,
+      remoteServerIdGenerator: null
+    });
 
-  data: () => ({
-    curr_panels: [0, 1, 2],
-    localSettings: null,
-    localform: null,
-    remoteForms: {},
-    submitStatus: null,
-    remoteServerIdGenerator: null
-  }),
-
-  validations: {
-    localSettings: {
-      remotes: {
-        maxLength: maxLength(500),
-        $each: {
-          hostname: { required, maxLength: maxLength(200), minLength: minLength(1), ipOrUrl: or(ipAddress, url) },
-          sshopts: { maxLength: maxLength(200), minLength: minLength(1) },
-          sshport: { integer, minValue: minValue(0), maxValue: maxValue(65535) },
-          enabled: { integer, minValue: minValue(0), maxValue: maxValue(1) },
-          ignoredPorts: {
-            maxLength: maxLength(1000),
-            $each: { integer, minValue: minValue(0), maxValue: maxValue(65535) }
+    const rules = {
+      localSettings: {
+        remotes: {
+          maxLength: maxLength(500),
+          $each: {
+            hostname: { required, maxLength: maxLength(200), minLength: minLength(1), ipOrUrl: or(ipAddress, url) },
+            sshopts: { maxLength: maxLength(200), minLength: minLength(1) },
+            sshport: { integer, minValue: minValue(0), maxValue: maxValue(65535) },
+            enabled: { integer, minValue: minValue(0), maxValue: maxValue(1) },
+            ignoredPorts: {
+              maxLength: maxLength(1000),
+              $each: { integer, minValue: minValue(0), maxValue: maxValue(65535) }
+            }
           }
-        }
-      },
-      scanEvery: { required },
-      darktheme: { required }
-    }
+        },
+        scanEvery: { required },
+        darktheme: { required }
+      }
+    };
+
+    const v$ = useVuelidate(rules, data);
+    return { name, v$ };
   },
 
   methods: {
@@ -240,7 +237,7 @@ export default {
     rules: defineSettingsRules
   },
 
-  mounted: function() {
+  mounted: function () {
     this.resetForm();
   }
 };

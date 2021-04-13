@@ -2,6 +2,7 @@ import superagent from "superagent";
 
 import RemoteServer from "@/js/remoteServer";
 import { notNullNorUndefined, messageTypes } from "@/js/utils";
+import { cloneObj } from "./utils";
 
 export class WebServerTab {
   constructor(
@@ -29,10 +30,11 @@ export class WebServerTab {
     this.sizeRuningMeanCounter = sizeRuningMeanCounter;
     this.errorLog = errorLog;
 
+    this.webcontent = null;
     this.webviewError = false;
-    this.webviewErrorInfo = null;
+    this.webviewErrorInfo = "";
     this.webviewCrashed = false;
-    this.webviewIsLoading = true;
+    this.webviewIsLoading = false;
   }
 
   get name() {
@@ -73,6 +75,24 @@ export class WebServerTab {
   // }
 }
 
+export function updateWebServerTabStatus(
+  { commit },
+  webserverTab,
+  webcontent = null,
+  webviewError = null,
+  webviewErrorInfo = null,
+  webviewCrashed = null,
+  webviewIsLoading = null
+) {
+  const srvTab = cloneObj(webserverTab);
+  srvTab.webcontent = webcontent;
+  if (webviewError != null) this.serverTab.webviewError = webviewError;
+  if (webviewErrorInfo != null) this.serverTab.webviewErrorInfo = webviewErrorInfo;
+  if (webviewCrashed != null) this.serverTab.webviewCrashed = webviewCrashed;
+  if (webviewIsLoading != null) this.serverTab.webviewIsLoading = webviewIsLoading;
+  commit("updateWebServerTab", webserverTab);
+}
+
 export class Server {
   constructor(port, hostname, serviceName, isHttps = false) {
     this.port = port;
@@ -105,25 +125,28 @@ export function scanWebservers({ commit, dispatch, state }) {
     const remote = state.availableRemoteServers[i];
     if (state.debug) console.log(`Scanning for listening ports on ${remote.hostname} remote server`);
 
-    scan_promises.push(
-      superagent
-        .get(`${remote.hostname}:${RemoteServer.CONSTANTS.api_port}${RemoteServer.CONSTANTS.remote_scan_endpoint}`)
-        .set("accept", "json")
-        .then(res => {
-          const body = JSON.parse(res.text);
-          const servers = body.servers.map(function(srv) {
-            return new Server(srv.port, srv.hostname, srv.service_name, srv.isHttps ? true : false);
-          });
-          commit("updateServers", servers);
-        })
-        .catch(err => {
-          const errMess = `Error occured when calling "${RemoteServer.CONSTANTS.remote_scan_endpoint}" endpoint at "${remote.hostname}:${
-            RemoteServer.CONSTANTS.api_port
-          }". error="${JSON.stringify(err)}"`;
-          console.log(JSON.stringify(errMess));
-          dispatch("showMessage", { type: messageTypes.ERROR, details: errMess });
-        })
-    );
+    const host = remote.isLocalhost ? "localhost" : remote.hostname;
+    const promise = superagent
+      .get(`http://${host}:${RemoteServer.CONSTANTS.api_port}${RemoteServer.CONSTANTS.remote_scan_endpoint}`)
+      //c.trustLocalhost()
+      .set("accept", "json")
+      .then(res => {
+        const body = JSON.parse(res.text);
+        const servers = body.servers.map(srv => new Server(srv.port, srv.hostname, srv.service_name, srv.isHttps ? true : false));
+        commit("updateServers", servers);
+      })
+      .catch(err => {
+        const errMess = `Error occured when calling "${RemoteServer.CONSTANTS.remote_scan_endpoint}" endpoint at "${remote.hostname}:${
+          RemoteServer.CONSTANTS.api_port
+        }". error="${JSON.stringify(err)}"`;
+        console.log(JSON.stringify(errMess));
+        dispatch("showMessage", {
+          type: messageTypes.ERROR,
+          details: errMess
+        });
+      });
+
+    scan_promises.push(promise);
   }
   return Promise.all(scan_promises);
 }

@@ -3,7 +3,6 @@ node_modules
 /dist
 /dist_electron
 package-lock.json
-/dev_build
 
 # local env files
 .env.local
@@ -23,3 +22,6 @@ pnpm-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+#Electron-builder output
+/dist_electron

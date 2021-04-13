@@ -1,15 +1,16 @@
 import Vue from "vue";
-import vuetify from "./plugins/vuetify";
-import "roboto-fontface/css/roboto/roboto-fontface.css";
-import "@mdi/font/css/materialdesignicons.css";
+import VueCompositionAPI from "@vue/composition-api";
 
-import App from "./App.vue";
-import store from "./store";
+import App from "@/App.vue";
+import store from "@/js/store";
+import vuetify from "./plugins/vuetify";
 
 Vue.config.productionTip = false;
 
+Vue.use(VueCompositionAPI);
+
 new Vue({
-  vuetify,
   store,
+  vuetify,
   render: h => h(App)
 }).$mount("#app");

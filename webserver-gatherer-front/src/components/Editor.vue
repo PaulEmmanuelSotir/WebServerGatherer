@@ -14,7 +14,7 @@ export default {
     editor: null
   }),
 
-  mounted: function() {
+  mounted: function () {
     monaco.editor.create(document.getElementById("editor"), {
       value: 'console.log("Hello, world")',
       language: "javascript"

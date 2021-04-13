@@ -18,7 +18,7 @@ export default {
     content: "...",
     currentPrompt: "ls -alh ."
   }),
-  mounted: function() {
+  mounted: function () {
     var term = new Terminal();
     term.open(document.getElementById("terminal"));
     term.write("ls -alh");

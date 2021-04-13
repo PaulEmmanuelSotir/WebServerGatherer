@@ -6,12 +6,10 @@
 npm install
 ```
 
-### Compiles and hot-reloads for development using custom Weback setup
-
-Note: Hot reload is made possible on electron by a custom Webpack setup (see ['wepack.config.js'](./wepack.config.js) and corresponding 'dev' script in ['package.json'](./package.json))
+### Compiles and hot-reloads for development
 
 ```
-npm run dev
+npm run serve
 ```
 
 ### Compiles and minifies for production
